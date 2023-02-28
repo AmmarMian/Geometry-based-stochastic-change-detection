@@ -23,7 +23,7 @@ import time
 from tqdm import tqdm
 
 
-def sliding_windows_treatment_image_time_series(image, windows_mask, function_to_compute, function_args, multi=False, queue=0):
+def sliding_windows_treatment_image_time_series(image, windows_mask, function_to_compute, function_args, multi=False, queue=0, tqdm_out=None):
     """ A function that allowing to compute a sliding windows treatment over a multivariate
         image time series.
         Inputs:
@@ -35,6 +35,7 @@ def sliding_windows_treatment_image_time_series(image, windows_mask, function_to
             * function_args = arguments to pass to function_to_compute
             * multi = True if parallel computing (use the parallel function not this one), False if not
             * queue = to obtain result for parralel computation
+            * tqdm_out = File to tranfer the tqdm outputs
         Outputs:
             * a 3-d array corresponding to the results. First two dimensions are spatial while the third correspond
               to the output of function_to_compute."""
@@ -43,7 +44,7 @@ def sliding_windows_treatment_image_time_series(image, windows_mask, function_to
     m_r, m_c = windows_mask.shape
     N = m_r*m_c
     result = []
-    for i_r in tqdm(range(int(m_r/2),n_r-int(m_r/2))): # Iterate on rows
+    for i_r in tqdm(range(int(m_r/2),n_r-int(m_r/2)), file=tqdm_out): # Iterate on rows
         result_line = []
         for i_c in range(int(m_c/2),n_c-int(m_c/2)): # Iterate on columns
 
@@ -73,7 +74,8 @@ def sliding_windows_treatment_image_time_series(image, windows_mask, function_to
 
 
 def sliding_windows_treatment_image_time_series_parallel(image, windows_mask, function_to_compute, function_args,
-                                                multi=False, number_of_threads_rows=3, number_of_threads_columns=3):
+                                                multi=False, number_of_threads_rows=3, number_of_threads_columns=3,
+                                                tqdm_out=None):
     """ A function that is a prallelisation of sliding_windows_treatment_image_time_series
         Inputs:
             * image = a numpy array of shape (n_r,n_c,p,T) where n_r is the number of rows,
@@ -87,6 +89,7 @@ def sliding_windows_treatment_image_time_series_parallel(image, windows_mask, fu
                 (total threads = number of cores of the machine in general)
             * number_of_threads_rows = number of thread to use in columns 
                 (total threads = number of cores of the machine in general) 
+            * tqdm_out = File to tranfer the tqdm outputs
         Outputs:
             * number_of_threads_columns = number of thread to use in columns 
                 (total threads = number of cores of the machine in general)"""
@@ -135,7 +138,7 @@ def sliding_windows_treatment_image_time_series_parallel(image, windows_mask, fu
 
         # Arguments to pass to each thread
         args = [(image_slices_list[i_r][i_c], windows_mask, function_to_compute, function_args, 
-                True, queues[i_r][i_c]) for i_r in range(number_of_threads_rows) for i_c in range(number_of_threads_columns)] 
+                True, queues[i_r][i_c], tqdm_out) for i_r in range(number_of_threads_rows) for i_c in range(number_of_threads_columns)] 
 
         # Initialising the threads
         jobs = [Process(target=sliding_windows_treatment_image_time_series, args=a) for a in args]
@@ -167,7 +170,7 @@ def sliding_windows_treatment_image_time_series_parallel(image, windows_mask, fu
 
     else:
         results = sliding_windows_treatment_image_time_series(image, windows_mask, 
-                                        function_to_compute, function_args)
+                                        function_to_compute, function_args, tqdm_out)
     return results
    
     

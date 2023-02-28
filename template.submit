@@ -22,7 +22,7 @@ when_to_transfer_output = ON_EXIT
 # User group options 
 # ------------------------------------------------------------
 +WishedAcctGroup = "group_usmb.listic"
-+isLongJob=True
+#+isLongJob=True
 
 # Demandes de ressources sur la machine
 # ------------------------------------------------------------

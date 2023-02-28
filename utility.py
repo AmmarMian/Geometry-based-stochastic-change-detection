@@ -20,6 +20,74 @@ from scipy.stats import (
 )
 import logging
 import autograd.numpy as np_a
+import math
+
+def sqrt_int(X: int):
+    """To find matching number of threads row and columns"""
+    N = math.floor(math.sqrt(X))
+    while bool(X % N):
+        N -= 1
+    M = X // N
+    return M, N
+
+def compute_several_statistics_tomemmap(X:np.ndarray, 
+    list_statistics:list, list_args:list, memmap:np.memmap, line:int,
+    column:int, flush_line:bool=True)->None:
+    """Compute and aggregate test statistic value for several
+    test statistics.
+
+    Parameters
+    ----------
+    X : array-like of shape (n_samples, n_features)
+        input array where n_samples is the number of pixels and
+        n_features, the number of dimensions of the diversity.
+    list_statistics : list
+        list of functions objects corresponding to the test
+        statistics
+    list_args : list
+        list of arg passed to the test statistic function
+    memmap : numpy memmap of shape (n_lines, n_columns, n_statistics)
+        object to write on disk directly
+    line : int
+        line number
+    column : int
+        column number
+    flush_line : bool
+        If True, we only flush at end of line to save disk usage
+    """
+
+    # checking if not already computed
+    if np.any(np.isnan(memmap[line, column])):
+        memmap[line, column] = np.array(
+            [ statistic(X, arg) 
+              for statistic, arg in 
+              zip(list_statistics, list_args) ]
+        )
+
+        # Write on disk
+        if flush_line:
+            if column == memmap.shape[1] - 1:
+                memmap.flush()
+        else:
+            memmap.flush()
+
+
+def vectorize_spatial(X:np.ndarray)->np.ndarray:
+    """Vectorize spatial dimensions of SITS.
+
+    Parameters
+    ----------
+    X : array_like of shape (.., n_lines, n_columns)
+        where ... represents any number of dimensions and
+        n_lines, n_columns represents the number of lines 
+        and columns of each image
+
+    Returns
+    -------
+    array-like of shape (..., n_lines*n_columns)
+        Vectorised image along spatial dimensions
+    """
+    return X.reshape(X.shape[:-2]+(-1,))
 
 def ToeplitzMatrix(rho, p):
     """ A function that computes a Hermitian semi-positive matrix.

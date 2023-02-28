@@ -4,6 +4,7 @@ from joblib import Parallel, delayed
 from numpy.lib.stride_tricks import sliding_window_view
 from tqdm import trange
 import argparse
+from utility import sqrt_int
 
 from wavelet_functions import decompose_image_wavelet
 from change_detection import (
@@ -13,66 +14,13 @@ from change_detection import (
     scale_and_shape_equality_robust_statistic_sgd,
     scale_and_shape_equality_robust_statistic_sgd_kron,
 )
+from multivariate_images_tools import sliding_windows_treatment_image_time_series_parallel
 
-
-def vectorize_spatial(X:np.ndarray)->np.ndarray:
-    """Vectorize spatial dimensions of SITS.
-
-    Parameters
-    ----------
-    X : array_like of shape (.., n_lines, n_columns)
-        where ... represents any number of dimensions and
-        n_lines, n_columns represents the number of lines 
-        and columns of each image
-
-    Returns
-    -------
-    array-like of shape (..., n_lines*n_columns)
-        Vectorised image along spatial dimensions
-    """
-    return X.reshape(X.shape[:-2]+(-1,))
-
-
-def compute_several_statistics_tomemmap(X:np.ndarray, 
-    list_statistics:list, list_args:list, memmap:np.memmap, line:int,
-    column:int, flush_line:bool=True)->None:
-    """Compute and aggregate test statistic value for several
-    test statistics.
-
-    Parameters
-    ----------
-    X : array-like of shape (n_samples, n_features)
-        input array where n_samples is the number of pixels and
-        n_features, the number of dimensions of the diversity.
-    list_statistics : list
-        list of functions objects corresponding to the test
-        statistics
-    list_args : list
-        list of arg passed to the test statistic function
-    memmap : numpy memmap of shape (n_lines, n_columns, n_statistics)
-        object to write on disk directly
-    line : int
-        line number
-    column : int
-        column number
-    flush_line : bool
-        If True, we only flush at end of line to save disk usage
-    """
-
-    # checking if not already computed
-    if np.any(np.isnan(memmap[line, column])):
-        memmap[line, column] = np.array(
-            [ statistic(X, arg) 
+def compute_repeat_statistics(X, args):
+    list_statistics, list_args, n_repeats = args
+    return [ statistic(np.tile(X, n_repeats), arg) 
               for statistic, arg in 
               zip(list_statistics, list_args) ]
-        )
-
-        # Write on disk
-        if flush_line:
-            if column == memmap.shape[1] - 1:
-                memmap.flush()
-        else:
-            memmap.flush()
 
 
 def parse_algorithms(detectors, a, b):
@@ -213,54 +161,16 @@ if __name__ == "__main__":
     n_rows, n_cols, n_features, n_times  = sits_data.shape
     print('Done')
 
-    # Creating a view of the data in the form of sliding windows
-    view = sliding_window_view(sits_data, mask, (0, 1))
-
 
     # -----------------------------------------------------------------------------
     # Performing detection
     # -----------------------------------------------------------------------------
     print('Performing detection')
-    memap_filepath = os.path.join(args.results_dir, f'result__{args.detectors}.dat')
-    # Allocating memory on disk and mapping it to array fro storing the results
-    if os.path.exists(memap_filepath):
-        # In case the computation has been halted, we don't start from scratch
-        results = np.memmap(
-            memap_filepath,
-            dtype=np.float32, mode="r+",
-            shape=view.shape[:2]+(len(list_detectors),)
-        )
-    else:
-        results = np.memmap(
-            memap_filepath,
-            dtype=np.float32, mode="w+",
-            shape=view.shape[:2]+(len(list_detectors),)
-        )
-        results[:] = np.nan
-        results.flush()
-
-
-    # Looking for first nan to find where we start again the computation 
-    status = np.where(np.isnan(results))
-    start_line, start_column = status[0][0], status[1][0]
-
-    # We only want to start to column fro the current line
-    def range_column(line):
-        if line == start_line:
-            return range(start_column, view.shape[1])
-        else:
-            return range(view.shape[1])
-
-    Parallel(n_jobs=-1)(
-        delayed(compute_several_statistics_tomemmap)(
-            # To repeat the data in case we don't have enough samples
-            np.tile(
-                # To have an array of shape (p, N, T)
-                np.moveaxis(vectorize_spatial(view[line,column]), 2, 1), n_repeats
-            ), list_detectors, list_args, results, line, column
-        )
-        for line in trange(start_line, view.shape[0], file=f_tqdm)
-        for column in range_column(line)
+    n_threads_rows, n_threads_columns = sqrt_int(os.cpu_count())
+    results = sliding_windows_treatment_image_time_series_parallel(
+        sits_data, np.ones(mask), compute_repeat_statistics, (list_detectors, list_args, n_repeats),
+        multi=True, number_of_threads_rows=n_threads_rows, number_of_threads_columns=n_threads_columns,
+        tqdm_out=f_tqdm
     )
     f_tqdm.close()
     print('Done.')
@@ -295,8 +205,3 @@ if __name__ == "__main__":
             pickle.dump(tosave, f)
     print('Done.')
 
-    # Cleanup
-    try:
-        os.remove(memap_filepath)
-    except:  # noqa
-        print('Could not clean-up automatically.')

@@ -4,6 +4,7 @@ import argparse
 from subprocess import run
 import stat
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Utility script for launching jobs for change detection on UAVSAR')
@@ -23,6 +24,7 @@ if __name__ == "__main__":
         arg_crop = '-'.join(args.crop_indexes)
     else:
         arg_crop = 'None'
+
     results_dir = f'results/scene{args.scene}_crop{arg_crop}_repeat{args.n_repeats}'
     print(f"Creating results directory: {results_dir}")
     if not os.path.exists(results_dir):
