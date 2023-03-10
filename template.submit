@@ -27,5 +27,5 @@ when_to_transfer_output = ON_EXIT
 # Demandes de ressources sur la machine
 # ------------------------------------------------------------
 request_cpus=8
-request_memory=64GB
+request_memory=32GB
 request_disk=10GB

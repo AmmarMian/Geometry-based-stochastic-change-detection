@@ -57,16 +57,16 @@ if __name__ == "__main__":
     # ---------------------------------------------------- 
 
     # SAR images
-    with open(os.path.join(args.data_dir, f'Scene_{scene}.npy'), 'rb') as f:
-        sits = np.load(f)
-    for t in range(sits.shape[-1]):
-        plt.figure(figsize=(16, 10))
-        span = 20*np.log10(
-            np.sum(np.abs(sits[...,t])**2, axis=2)
-        )
-        plt.imshow(span, cmap='gray', aspect='auto')
-        plt.colorbar()
-        plt.title(f'Image at t={t}')
+    # with open(os.path.join(args.data_dir, f'Scene_{scene}.npy'), 'rb') as f:
+        # sits = np.load(f)
+    # for t in range(sits.shape[-1]):
+        # plt.figure(figsize=(16, 10))
+        # span = 20*np.log10(
+            # np.sum(np.abs(sits[...,t])**2, axis=2)
+        # )
+        # plt.imshow(span, cmap='gray', aspect='auto')
+        # plt.colorbar()
+        # plt.title(f'Image at t={t}')
 
     # Results of detectors
     for i, name in enumerate(list_names):

@@ -24,17 +24,40 @@ from utility import (
 )
 
 from change_detection import (
+    covariance_equality_glrt_gaussian_statistic,
     scale_and_shape_equality_robust_statistic,
     scale_and_shape_equality_robust_statistic_kron,
     scale_and_shape_equality_robust_statistic_sgd,
-    scale_and_shape_equality_robust_statistic_sgd_kron,
-    Computing_COR_ChangeDetection
+    scale_and_shape_equality_robust_statistic_sgd_kron
 )
 
 
 def generate_data_batch(a: int, b: int, n_samples: int,
                         tau: np.ndarray, Sigma: np.ndarray,
-                        rng=None) -> np.ndarray:      
+                        rng=None) -> np.ndarray:
+    """Generate data samples for a single batch.
+
+    Parameters
+    ----------
+    a : int
+        size of matrix A in model Cov = A kron B
+    b : int
+        size of matrix B in model Cov = A kron B
+    n_samples : int
+        number of samples in this batch
+    tau : array-like of shape (n_samples,)
+        vector of textures 
+    Sigma : array-like of shape (a*b, a*b)
+        covariance matrix of model
+    rng : None or Generator
+        rng generator
+
+    Returns
+    -------
+    array-like of shape (a*b, n_samples)
+        data at this batch
+    """
+
     X = multivariate_normal.rvs(
             mean=np.zeros((a*b,)), cov=Sigma, size=n_samples
         ) +\
@@ -48,14 +71,60 @@ def one_trial(trial_no:int, a:int, b:int, n_samples:int, n_batches:int,
               scenario: str, nu_before:float, nu_after:float,
               rho_before:float, rho_after: float,
               list_statistics:list, list_args:list, list_names:list) -> dict:
-    
+    """Definition of a a trial in this monte-carlo-simulation. We generate
+    batches of data according to the change scenario and statistical parameters
+    then compute all the test statistics.
+
+    Parameters
+    ----------
+    trial_no : int
+        trial_no
+    a : int
+        size of matrix A in model Cov = A kron B
+    b : int
+        size of matrix B in model Cov = A kron B
+    n_samples : int
+        number of samples in this batch
+    n_batches : int
+        number of total batches of data
+    scenario : str
+        choice between 'change' or 'nochange'
+    nu_before : float
+        texture gamma parameter before the change
+    nu_after : float
+        texture gamma parameter after the change,
+        used only for scenario 'change'
+    rho_before : float
+        rho_before
+    rho_after : float
+        rho_after
+    list_statistics : list
+        list_statistics
+    list_args : list
+        list_args
+    list_names : list
+        list_names
+
+    Returns
+    -------
+    dict
+
+    """
+ 
     rng = np.random.default_rng(trial_no)
 
     # Managing statistical parameters of change
     tau_before = rng.gamma(nu_before)
-    Sigma_before = ToeplitzMatrix(rho_before, a*b)
+    Sigma_before = np.kron(
+        ToeplitzMatrix(rho_before, a),
+        ToeplitzMatrix(rho_before, b)
+    )
     if scenario == "change":
         tau_after = rng.gamma(nu_after)
+        Sigma_after = np.kron(
+            ToeplitzMatrix(rho_after, a),
+            ToeplitzMatrix(rho_after, b)
+        )
         Sigma_after = ToeplitzMatrix(rho_after, a*b)
     else:
         tau_after = tau_before
@@ -81,15 +150,17 @@ def one_trial(trial_no:int, a:int, b:int, n_samples:int, n_batches:int,
 
     return result
 
-
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser("Monte-carlo simulation of a change in a batch of data")
+    parser = argparse.ArgumentParser(description="Monte-carlo simulation of a "
+                                     "change in a batch of data")
     parser.add_argument("scenario", help="Type of CD scenario",
                         choices=['change', 'nochange'])
-    parser.add_argument("a", help="dimension of matrix A in model cov = A kron B",
+    parser.add_argument("a",
+                        help="dimension of matrix A in model cov = A kron B",
                         type=int)
-    parser.add_argument("b", help="dimension of matrix B in model cov = A kron B",
+    parser.add_argument("b",
+                        help="dimension of matrix B in model cov = A kron B",
                         type=int)
     parser.add_argument("n_samples", help="number of samples at each batch",
                         type=int)
@@ -116,27 +187,28 @@ if __name__ == "__main__":
         raise AttributeError(
                 r'It is necessary to precise the parameters after the change!')
 
-
     # Definition of statistics used
     list_statistics = [
+        covariance_equality_glrt_gaussian_statistic,
         scale_and_shape_equality_robust_statistic,
-        scale_and_shape_equality_robust_statistic_kron,
+        # scale_and_shape_equality_robust_statistic_kron,
         scale_and_shape_equality_robust_statistic_sgd,
-        scale_and_shape_equality_robust_statistic_kron
+        # scale_and_shape_equality_robust_statistic_sgd_kron
     ]
     list_args = [
+        'log',
         (1e-4, 30, 'log'),
-        (args.a, args.b),
+        # (args.a, args.b),
         'Fixed-point',
-        (args.a, args.b)
+        # (args.a, args.b)
     ]
     list_names = [
+        'Gaussian GLRT',
         "Scaled Gaussian GLRT",
-        "Scaled Gaussian Kronecker GLRT",
+        # "Scaled Gaussian Kronecker GLRT",
         "Scaled Gaussian SGD",
-        "Scaled Gaussian Kronecker SGD"
+        # "Scaled Gaussian Kronecker SGD"
     ]
-
 
     print("Monte-carlo simulation with args:")
     pprint.pprint(vars(args))
@@ -185,4 +257,4 @@ if __name__ == "__main__":
         os.mkdir(args.results_dir)
 
     with open(os.path.join(args.results_dir, 'artifact.pkl'), 'wb') as f:
-        pickle.dump(toSave)
+        pickle.dump(toSave, f)
