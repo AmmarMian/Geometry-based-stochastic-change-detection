@@ -75,6 +75,10 @@ if __name__ == "__main__":
                         )
     parser.add_argument('--is_flash', action='store_true', default=False,
                         help='Whether the job is short (Less than hour to have priority scheduling.')
+    parser.add_argument('--ignore_git', action='store_true', default=False,
+                       help='Wheter to ignore git commit requirements. NOT RECOMMENDED.')
+    parser.add_argument('--tag', default=[], action='append',
+                        help='Tag to reference the experiment. Can be used multiple times.')
     args = parser.parse_args()
 
     # Handling terminal info output using rich console
@@ -89,6 +93,10 @@ if __name__ == "__main__":
         except AssertionError:
             console.log('[bold red]Repertory is not committed.')
             console.log('Please commit changes before launching an experiment')
+            if args.ignore_git:
+                console.log('Git requirements overidden. Taking previous commit as reference.')
+            else:
+                sys.exit(0)
 
         # Handling experiment results directory
         if not os.path.exists(args.results_dir):
@@ -125,7 +133,9 @@ if __name__ == "__main__":
                 'status': 'not started',
                 'arguments': args.execute_args,
                 'launch_date': datetime.datetime.now().isoformat(),
-                'experiment_results_dir': experiment_results_dir
+                'experiment_results_dir': experiment_results_dir,
+                'commit_sha': repo.head.object.hexsha,
+                'tags': args.tag
                 })
 
         # Launching experiment
