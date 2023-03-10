@@ -8,12 +8,17 @@
 # launched from the launch_experiment.py script
 # =========================================
 
+import sys
 import os
 from tinydb import TinyDB, Query
-import rich
+from rich import print as rprint
+from rich.console import Console
+from rich.table import Table
 import argparse
 from simple_term_menu import TerminalMenu
 import mmap
+import pydoc
+
 
 def select_experiment_menu(dB):
     choices = [
@@ -33,7 +38,7 @@ def select_experiment_menu(dB):
                         preview_title='Experiment output',
                         preview_size=2)
     index = menu.show()
-    return index
+    return index + 1
 
 
 def update_status_jobs(dB):
@@ -52,6 +57,67 @@ def update_status_jobs(dB):
                     }, Query().id == experiment['id'])
     return dB
 
+
+def show_all_experiments(dB):
+    console_table = Console()
+
+    table = Table(title='Experiments')
+    table.add_column('ID', justify='left', style='white', no_wrap=True)
+    table.add_column('Tags', justify='center', style='Yellow', no_wrap=True)
+    table.add_column('Experiment folder', justify='center', style='blue', no_wrap=True)
+    table.add_column('Start date', justify='center', style='magenta', no_wrap=True)
+    table.add_column('Status', justify='right', no_wrap=True)
+
+    for experiment in dB:
+        table.add_row(str(experiment['id']), ", ".join(experiment['tags']), 
+                      experiment['experiment_folder'],
+                      experiment['launch_date'], experiment['status'])
+    console_table.print(table)
+
+def menu_experiment(experiment):
+    rprint(f"[bold]Showing information for experiment {experiment['id']}\n")
+
+    # Action menu on this specific experiment
+    rprint(experiment)
+
+def select_experiment(dB):
+    choices = ['[a] Select from ID', '[b] Select from menu']
+    menu = TerminalMenu(choices)
+    choice = menu.show()
+
+    if choice == 0:
+        ID = input('Enter an ID: ')
+    elif choice == 1:
+        ID = select_experiment_menu(dB)
+
+    experiment = dB.search(Query().id == int(ID))
+    if len(experiment) == 1:
+        menu_experiment(experiment[0])
+    else:
+        print('Sorry experiment not found, try again..')
+
+def main_menu(dB):
+
+    choice = None
+    choices = [
+            '[a] Show all experiments',
+            '[b] Select an experiment',
+            '[c] Filter experiments',
+            '[q] quit'
+            ]
+    menu = TerminalMenu(choices)
+    while choice != len(choices) - 1:
+        choice = menu.show()
+
+        if choice == 0:
+            show_all_experiments(dB)
+        elif choice == 1:
+            select_experiment(dB)
+        elif choice == 2:
+            filter_experiments(dB)
+    sys.exit(0)
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
@@ -65,4 +131,4 @@ if __name__ == "__main__":
     dB = update_status_jobs(dB)
 
     # Main menu
-    print(select_experiment_menu(dB))
+    main_menu(dB)
