@@ -45,8 +45,8 @@ def execute_locally(console, status, execute_path, execute_args,
 
     f_stdout = open(os.path.join(experiment_results_dir, 'output.txt'), 'a')
     f_stderr = open(os.path.join(experiment_results_dir, 'error.txt'), 'a')
-    f_stdout.write(f'Doing task {task_no}/{total_tasks}: {execute_string}')
-    f_stderr.write(f'Doing task {task_no}/{total_tasks}: {execute_string}')
+    f_stdout.write(f'Doing task {task_no}/{total_tasks}: {execute_string}\n')
+    f_stderr.write(f'Doing task {task_no}/{total_tasks}: {execute_string}\n')
 
     try:
         run([execute_path, execute_args, experiment_results_dir],
@@ -59,7 +59,7 @@ def execute_locally(console, status, execute_path, execute_args,
     f_stderr.write('\n\n')
     f_stdout.close()
     f_stderr.close()
-    console.log(f'Task done [{task_no}/{total_tasks}].')
+    console.log(f'Task done [{task_no}/{total_tasks}].\n')
 
 
 def execute_job(console, status, execute_path, execute_args,
@@ -72,13 +72,14 @@ def execute_job(console, status, execute_path, execute_args,
     info['arguments'] = execute_args + f' {experiment_results_dir}'
 
     job = htcondor.Submit(info)
-    console.log(job)
+    console.log(f'Info on job [bold]{task_no}[/bold]:')
+    console.log(str(job).strip())
     schedd = htcondor.Schedd()  # get Python representation of the scheduler
     submit_result = schedd.submit(job)  # submit the job
 
     console.log(
             f'Job [{task_no}/{total_tasks}] submitted to '
-            f'Cluster {submit_result.cluster()}')
+            f'Cluster {submit_result.cluster()}\n')
     return submit_result.cluster()
 
 
@@ -172,7 +173,10 @@ if __name__ == "__main__":
             dB = TinyDB(dB_path)
 
             # Handling experiment results directory
-            experiment_id = len(dB)+1
+            if len(dB) == 0:
+                experiment_id = 1
+            else:
+                experiment_id = dB.all()[-1]['id'] + 1
             experiment_basename = os.path.basename(
                     os.path.normpath(args.experiment_folder))
             experiment_results_dir = os.path.join(
@@ -184,7 +188,8 @@ if __name__ == "__main__":
                     )
             os.mkdir(experiment_results_dir)
 
-            console.log('Adding experiment to database')
+            console.log('Adding experiment '
+                        f'[bold]{experiment_id}[/bold] to database')
             dB.insert({
                     'id': experiment_id,
                     'experiment_folder': args.experiment_folder,
@@ -203,7 +208,7 @@ if __name__ == "__main__":
 
             if args.runner == "local":
                 console.log(f'Launching {len(args.execute_args)} executions '
-                            'from local runner')
+                            'from local runner\n')
                 for task_no, execute_args in enumerate(args.execute_args):
                     execute_locally(console, status, execute_path,
                                     execute_args, experiment_results_dir,
@@ -211,10 +216,10 @@ if __name__ == "__main__":
                 dB.update({"status": "finished"}, Query().id == experiment_id)
 
             else:
-                console.log('Submitting job to HTCondor')
+                console.log('Submitting job(s) to HTCondor')
                 console.log(
                         f'Launching {len(args.execute_args)} executions '
-                        'from HTCondor jobs')
+                        'from HTCondor jobs\n')
 
                 cluster_ids = []
                 submit_info = {

@@ -22,6 +22,7 @@ import re
 from subprocess import run
 import shutil
 
+
 def select_experiment_menu(dB):
     """Menu to select an experiment among all available.
     With a preview of the output.
@@ -44,17 +45,21 @@ def select_experiment_menu(dB):
         experiment = dB.search(Query().id == ID)[0]
 
         # Find all output files
-        rx = re.compile("output(.*)txt")
-        search = list(os.walk(experiment['experiment_results_dir']))[0]
-        list_files = [file for file in search[-1]
-                      if rx.match(file)]
-        file_content = ""
-        for file in list_files:
-            with open(os.path.join(
-                experiment['experiment_results_dir'], file), 'r') as f:
-                file_content += f.read()
-            file_content += "\n"
-        return file_content
+        # rx = re.compile("output(.*)txt")
+        # search = list(os.walk(experiment['experiment_results_dir']))[0]
+        # list_files = [file for file in search[-1]
+                      # if rx.match(file)]
+        # file_content = ""
+        # for file in list_files:
+            # file_content += f"File {file}:\n"
+            # with open(os.path.join(
+                # experiment['experiment_results_dir'], file), 'r') as f:
+                # file_content += f.read()
+            # file_content += "\n"
+        # return file_content
+        return concatenate_files_match(
+                experiment['experiment_results_dir'], 'output(.*)txt'
+                )
 
     # def preview_command(entry):
         # ID = int(entry.split(":")[0])
@@ -64,7 +69,7 @@ def select_experiment_menu(dB):
 
     menu = TerminalMenu(choices, title='Select an experiment: (press q for quitting)',
                         preview_command=preview_command,
-                        preview_title='Experiment directory contents',
+                        preview_title='Experiment output',
                         preview_size=2)
     index = menu.show()
 
@@ -110,6 +115,7 @@ def show_all_experiments(dB):
     Args:
         dB (TinydB): Experiments database
     """
+    dB = update_status_jobs(dB)
     console_table = Console()
 
     table = Table(title='Experiments')
@@ -152,11 +158,46 @@ def parse_metadata_action(action_file_path):
     return title, description
 
 
+def concatenate_files_match(path, regexp):
+    """Concatenate all files correponding to a
+    regexp in path directory and return a string."""
+
+    rx = re.compile(regexp)
+    search = list(os.walk(path))[0]
+    list_files = [file for file in search[-1]
+                  if rx.match(file)]
+    file_content = ""
+    for file in list_files:
+        file_content += f"File {file}:\n"
+        with open(os.path.join(path, file), 'r') as f:
+            file_content += f.read()
+        file_content += "\n"
+    return file_content
+
+
 def menu_experiment(experiment):
 
     # Printing experiment information
     rprint(f"[bold]Showing information for experiment {experiment['id']}")
     rprint(experiment)
+
+    # Options to show logs, error and output
+    error = concatenate_files_match(
+            experiment['experiment_results_dir'], 'error(.*)txt'
+            )
+    output = concatenate_files_match(
+            experiment['experiment_results_dir'], 'output(.*)txt'
+            )
+    log = concatenate_files_match(
+            experiment['experiment_results_dir'], 'log(.*)txt'
+            )
+    choices = ['[a] See output(s)', '[b] See error(s)']
+
+    if 'submit_info' in experiment:
+        choices += ['[c] See logs']
+        base_number = 100
+    else:
+        base_number = 99
 
     # Showing available actions
     metadata = {}
@@ -164,21 +205,36 @@ def menu_experiment(experiment):
     for i, action in enumerate(actions):
         title, description = parse_metadata_action(action)
         metadata[title] = description
-    choices = [f'[{chr(i+97)}] ' + title for title in metadata.keys()]
+    choices += [f'[{chr(i+base_number)}] ' + title for title in metadata.keys()]
 
-    if len(choices) > 0:
-        menu = TerminalMenu(choices, title="Select an action:",
-                            preview_command=(lambda x: metadata[x]),
-                            preview_title="Description",
-                            preview_size=2)
+    def preview_command(entry):
+        if entry == choices[0][4:]:
+            return "See concatenation of all outputs from experiment"
+        elif entry == choices[1][4:]:
+            return "See concatenation of all errors files from experiment"
+        elif entry == choices[2][4:]:
+            return "See concatenation of all logs from experiment. (Only for a job runner.)"
+        else:
+            return metadata[entry]
+
+    menu = TerminalMenu(choices, title="Select an action:",
+                        preview_command= preview_command,
+                        preview_title="Description",
+                        preview_size=2)
+    index = menu.show()
+    while index is not None:
+        if index == 0:
+            print(output)
+        elif index == 1:
+            pydoc.pager(error)
+        elif index == 2 and 'submit_info' in experiment:
+            pydoc.pager(log)
+        else:
+            rprint(f"[bold green]Executing action {actions[index - base_number + 97]}")
+            run([actions[index - base_number + 97],  # To take into account if submit or not
+                 experiment['experiment_results_dir']])
+
         index = menu.show()
-        while index is not None:
-            rprint(f"[bold green]Executing action {actions[index]}")
-            run([actions[index], experiment['experiment_results_dir']])
-
-            index = menu.show()
-    else:
-        rprint('[bold red]No action available for this experiment!')
 
 
 def select_experiment(dB):

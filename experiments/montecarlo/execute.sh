@@ -16,7 +16,7 @@ import plotext
 
 results_dir = "${BASH_ARGV[0]}"
 data = np.random.randn(100)
-with open(os.path.join(results_dir, 'artifact.pkl'), 'wb') as f:
+with open(os.path.join(results_dir, f'artifact_{${BASH_ARGV[1]}}.pkl'), 'wb') as f:
     pickle.dump(data, f)
 
 plotext.plot(data)
