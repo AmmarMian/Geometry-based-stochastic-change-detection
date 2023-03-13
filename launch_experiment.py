@@ -19,11 +19,13 @@ from subprocess import run
 import git
 import copy
 import time
+import pathlib
+
 
 def prompt_create_dir(dir_path, console, status):
     console.log(f'Directory {dir_path} does not exist.')
     status.stop()
-    choice = console.input('Should I create it for you ? (y/N)')
+    choice = console.input('Should I create it for you ? (y/N) ')
     if choice == '' or 'y':
         os.mkdir(dir_path)
         status.start()
@@ -90,13 +92,13 @@ if __name__ == "__main__":
     parser.add_argument('experiment_folder', help="Experiment folder path. "
                         "Must contains at least one script named execute.sh "
                         "performing the experiment.\n"
-                        "It can take command line arguments"
+                        "It can take command line arguments "
                         "as an input to handle varying hyperparameters. "
                         "Those are specified thanks to the optional "
-                        "argument --execute_args\n"
-                        "The results directory for this experiment will also"
+                        "argument --execute_args.\n"
+                        "The results directory for this experiment will also "
                         "be passed as the last argument to handle data saving."
-                        "Additionally, any number of scripts can be added to "
+                        " Additionally, any number of scripts can be added to "
                         "perform actions after the experiment ended using the "
                         "syntax action_*.sh. in the name of the script."
                         )
@@ -116,7 +118,7 @@ if __name__ == "__main__":
                         "experiments/test --execute_args \"--arg1 arg1\".\n"
                         "It is also possible to specify multiple execute_args, "
                         "which will be executed as part of the same experiment. "
-                        "If execution is locla, they will be run one after the other, "
+                        "If execution is local, they will be run one after the other, "
                         "Otherwhise the jobs will be launched simulataneously.",
                         )
     parser.add_argument('--n_cpus', type=int, default='1',
@@ -152,7 +154,6 @@ if __name__ == "__main__":
                             'Taking previous commit as reference.')
                 else:
                     sys.exit(0)
-
 
             # Handling experiment directory
             execute_path = os.path.join(args.experiment_folder, 'execute.sh')
@@ -201,7 +202,8 @@ if __name__ == "__main__":
             dB.update({"status": "running"}, Query().id == experiment_id)
 
             if args.runner == "local":
-                console.log(f'Launching {len(args.execute_args)} executions from local runner')
+                console.log(f'Launching {len(args.execute_args)} executions '
+                            'from local runner')
                 for task_no, execute_args in enumerate(args.execute_args):
                     execute_locally(console, status, execute_path,
                                     execute_args, experiment_results_dir,
@@ -213,19 +215,25 @@ if __name__ == "__main__":
                 console.log(
                         f'Launching {len(args.execute_args)} executions '
                         'from HTCondor jobs')
+
                 cluster_ids = []
+                submit_info = {
+                    'executable': execute_path,
+                    'request_cpus': args.n_cpus,
+                    'request_memory': args.memory,
+                    'getenv': True,
+                    'should_transfer_files': 'IF_NEEDED',
+                    'when_to_transfer_output': 'ON_EXIT',
+                    '+WishedAcctGroup': "group_usmb.listic",
+                    '+isFlash': args.is_flash,
+                    'batch_name': str(
+                        pathlib.PurePath(args.experiment_folder).name
+                        )
+                    }
+
                 for task_no, execute_args in enumerate(args.execute_args):
-                    submit_info = {
-                        'executable': execute_path,
-                        'request_cpus': args.n_cpus,
-                        'request_memory': args.memory,
-                        'getenv': True,
-                        'should_transfer_files': 'IF_NEEDED',
-                        'when_to_transfer_output': 'ON_EXIT',
-                        '+WishedAcctGroup': "group_usmb.listic",
-                        '+isFlash': args.is_flash
-                        }
-                    cluster = execute_job(console, status, execute_path, execute_args,
+                    cluster = execute_job(console, status, execute_path,
+                                          execute_args,
                                           experiment_results_dir, task_no+1,
                                           len(args.execute_args), submit_info)
                     cluster_ids.append(cluster)

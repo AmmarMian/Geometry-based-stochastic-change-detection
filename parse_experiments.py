@@ -20,7 +20,7 @@ import mmap
 import pydoc
 import re
 from subprocess import run
-
+import shutil
 
 def select_experiment_menu(dB):
     """Menu to select an experiment among all available.
@@ -40,15 +40,31 @@ def select_experiment_menu(dB):
         ]
 
     def preview_command(entry):
-        id = int(entry.split(":")[0])
-        experiment = dB.all()[id-1]
-        with open(os.path.join(experiment['experiment_results_dir'], 'output.txt'), 'r') as f:
-            file_content = f.read()
+        ID = int(entry.split(":")[0])
+        experiment = dB.search(Query().id == ID)[0]
+
+        # Find all output files
+        rx = re.compile("output(.*)txt")
+        search = list(os.walk(experiment['experiment_results_dir']))[0]
+        list_files = [file for file in search[-1]
+                      if rx.match(file)]
+        file_content = ""
+        for file in list_files:
+            with open(os.path.join(
+                experiment['experiment_results_dir'], file), 'r') as f:
+                file_content += f.read()
+            file_content += "\n"
         return file_content
+
+    # def preview_command(entry):
+        # ID = int(entry.split(":")[0])
+        # experiment = dB.search(Query().id == ID)[0]
+        # results_path = experiment['experiment_results_dir']
+        # return "\n".join(os.listdir(results_path))
 
     menu = TerminalMenu(choices, title='Select an experiment: (press q for quitting)',
                         preview_command=preview_command,
-                        preview_title='Experiment output',
+                        preview_title='Experiment directory contents',
                         preview_size=2)
     index = menu.show()
 
@@ -129,7 +145,7 @@ def parse_metadata_action(action_file_path):
     """Parsing header of action script file to show in the action menu.
     """
     with open(action_file_path, 'r') as f:
-        f.readline() # To skip the #!usr/bin/bash
+        f.readline()  # To skip the #!usr/bin/bash
         title = f.readline().split('Title: ')[-1].strip()
         description = f.readline().split('Description: ')[-1].strip()
 
@@ -137,7 +153,7 @@ def parse_metadata_action(action_file_path):
 
 
 def menu_experiment(experiment):
-    
+
     # Printing experiment information
     rprint(f"[bold]Showing information for experiment {experiment['id']}")
     rprint(experiment)
@@ -149,16 +165,20 @@ def menu_experiment(experiment):
         title, description = parse_metadata_action(action)
         metadata[title] = description
     choices = [f'[{chr(i+97)}] ' + title for title in metadata.keys()]
-    menu = TerminalMenu(choices, title="Select an action:",
-                        preview_command=(lambda x: metadata[x]),
-                        preview_title="Description",
-                        preview_size=2)
-    index = menu.show()
-    while index is not None:
-        rprint(f"[bold green]Executing action {actions[index]}")
-        run([actions[index], experiment['experiment_results_dir']])
 
+    if len(choices) > 0:
+        menu = TerminalMenu(choices, title="Select an action:",
+                            preview_command=(lambda x: metadata[x]),
+                            preview_title="Description",
+                            preview_size=2)
         index = menu.show()
+        while index is not None:
+            rprint(f"[bold green]Executing action {actions[index]}")
+            run([actions[index], experiment['experiment_results_dir']])
+
+            index = menu.show()
+    else:
+        rprint('[bold red]No action available for this experiment!')
 
 
 def select_experiment(dB):
@@ -171,17 +191,55 @@ def select_experiment(dB):
     menu = TerminalMenu(choices)
     choice = menu.show()
 
+    ID = None
     if choice == 0:
         ID = input('Enter an ID: ')
     elif choice == 1:
         ID = select_experiment_menu(dB)
-    
+
     if ID is not None:
         experiment = dB.search(Query().id == int(ID))
         if len(experiment) == 1:
             menu_experiment(experiment[0])
         else:
             print('Sorry experiment not found, try again..')
+
+
+def delete_experiment(dB, experiment_id):
+    rprint(f"[bold red]You are going to delete experiment {experiment_id}")
+    rprint(dB.search(Query().id == experiment_id)[0])
+
+    choice = input('Are you sure (No, yes)? ')
+    if choice == 'yes':
+
+        # Removing experiment directory
+        shutil.rmtree(
+                dB.search(
+                    Query().id == experiment_id
+                    )[0]['experiment_results_dir']
+                )
+
+        # Removing experiment from database
+        dB.remove(Query().id == experiment_id)
+        rprint('[bold green]Successfully deleted experiment')
+
+
+def delete_experiments_menu(dB):
+    rprint('Experiment deletion menu')
+    choices = ['[a] Select from ID', '[b] Select from menu']
+    menu = TerminalMenu(choices)
+    choice = menu.show()
+
+    ID = None
+    if choice == 0:
+        ID = int(input('Enter an ID: '))
+    elif choice == 1:
+        ID = select_experiment_menu(dB)
+
+    if choice is not None and len(dB.search(Query().id == ID)) == 1:
+        delete_experiment(dB, ID)
+    else:
+        rprint('[bold red]ID has no ore more than one match')
 
 
 def filter_experiments(dB):
@@ -199,6 +257,7 @@ def main_menu(dB):
             '[a] Show all experiments',
             '[b] Select an experiment',
             '[c] Filter experiments',
+            '[d] Delete an experiment',
             '[q] quit'
             ]
     menu = TerminalMenu(choices)
@@ -211,6 +270,8 @@ def main_menu(dB):
             select_experiment(dB)
         elif choice == 2:
             filter_experiments(dB)
+        elif choice == 3:
+            delete_experiments_menu(dB)
     sys.exit(0)
 
 
