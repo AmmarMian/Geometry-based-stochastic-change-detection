@@ -8,9 +8,19 @@
 # Brief: <brief>
 # =========================================
 
-echo "This is a testing script $0"
-echo "Now I will sleep $1 seconds"
-sleep $1
-echo "Done. Quitting..."
+python - << EOF
+import pickle
+import numpy as np
+import os
+import plotext
 
-python3 -c "import plotext as plt; plt.scatter(plt.sin()); plt.title('Scatter Plot'); plt.show();"
+results_dir = "${BASH_ARGV[0]}"
+data = np.random.randn(100)
+with open(os.path.join(results_dir, 'artifact.pkl'), 'wb') as f:
+    pickle.dump(data, f)
+
+plotext.plot(data)
+plotext.show()
+
+
+EOF

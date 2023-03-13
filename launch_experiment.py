@@ -17,7 +17,8 @@ from tinydb import TinyDB, Query
 import datetime
 from subprocess import run
 import git
-
+import copy
+import time
 
 def prompt_create_dir(dir_path, console, status):
     console.log(f'Directory {dir_path} does not exist.')
@@ -29,6 +30,54 @@ def prompt_create_dir(dir_path, console, status):
     else:
         console.log('Exitting...')
         sys.Exit(0)
+
+
+def execute_locally(console, status, execute_path, execute_args,
+                    experiment_results_dir, task_no, total_tasks):
+    execute_string = f'bash {execute_path} {execute_args} ' +\
+                    f'{experiment_results_dir}'
+    console.log(f'Executing command: {execute_string}\n')
+    status.update(
+            f"[bold]Task [{task_no}/{total_tasks}]:[/bold] Experiment "
+            "{args.experiment_folder} with parameters {execute_args}.")
+
+    f_stdout = open(os.path.join(experiment_results_dir, 'output.txt'), 'a')
+    f_stderr = open(os.path.join(experiment_results_dir, 'error.txt'), 'a')
+    f_stdout.write(f'Doing task {task_no}/{total_tasks}: {execute_string}')
+    f_stderr.write(f'Doing task {task_no}/{total_tasks}: {execute_string}')
+
+    try:
+        run([execute_path, execute_args, experiment_results_dir],
+            stdout=f_stdout, stderr=f_stderr)
+    except Exception as e:
+        console.log('[bold red]Something went wrong. Check log files!')
+        console.log(e)
+
+    f_stdout.write('\n\n')
+    f_stderr.write('\n\n')
+    f_stdout.close()
+    f_stderr.close()
+    console.log(f'Task done [{task_no}/{total_tasks}].')
+
+
+def execute_job(console, status, execute_path, execute_args,
+                experiment_results_dir, task_no, total_tasks,
+                submit_info):
+    info = copy.deepcopy(submit_info)
+    info['output'] = os.path.join(experiment_results_dir, f'output_{task_no}.txt')
+    info['error'] = os.path.join(experiment_results_dir, f'error_{task_no}.txt')
+    info['log'] = os.path.join(experiment_results_dir, f'log_{task_no}.txt')
+    info['arguments'] = execute_args + f' {experiment_results_dir}'
+
+    job = htcondor.Submit(info)
+    console.log(job)
+    schedd = htcondor.Schedd()  # get Python representation of the scheduler
+    submit_result = schedd.submit(job)  # submit the job
+
+    console.log(
+            f'Job [{task_no}/{total_tasks}] submitted to '
+            f'Cluster {submit_result.cluster()}')
+    return submit_result.cluster()
 
 
 if __name__ == "__main__":
@@ -51,7 +100,7 @@ if __name__ == "__main__":
                         "perform actions after the experiment ended using the "
                         "syntax action_*.sh. in the name of the script."
                         )
-    parser.add_argument('runner', choices=['local', 'job'], default='local',
+    parser.add_argument('--runner', choices=['local', 'job'], default='local',
                         help="Specifies how to execute the experiment.\n "
                         "If job is specified. It is possible to specify its "
                         "options using args --n_cpus and --memory."
@@ -60,23 +109,26 @@ if __name__ == "__main__":
                         help="Directory where experiment results are stored."
                         " Default to ./results/."
                         )
-    parser.add_argument('--execute_args', type=str,
+    parser.add_argument('--execute_args', default=[], action="append",
                         help="Arguments to pass to "
                         "execute.sh script. MUST BE USED WITH \"\" around.\n"
                         "For example:\n python launch_experiment.py "
-                        "experiments/test --execute_args \"--arg1 arg1\"",
-                        default=''
+                        "experiments/test --execute_args \"--arg1 arg1\".\n"
+                        "It is also possible to specify multiple execute_args, "
+                        "which will be executed as part of the same experiment. "
+                        "If execution is locla, they will be run one after the other, "
+                        "Otherwhise the jobs will be launched simulataneously.",
                         )
     parser.add_argument('--n_cpus', type=int, default='1',
                         help="Number of cpus to ask for a job."
                         )
-    parser.add_argument('--memory', type=str, default='8GB',
+    parser.add_argument('--memory', type=str, default='100MB',
                         help="Memory to ask for a job."
                         )
     parser.add_argument('--is_flash', action='store_true', default=False,
                         help='Whether the job is short (Less than hour to have priority scheduling.')
     parser.add_argument('--ignore_git', action='store_true', default=False,
-                       help='Wheter to ignore git commit requirements. NOT RECOMMENDED.')
+                        help='Wheter to ignore git commit requirements. NOT RECOMMENDED.')
     parser.add_argument('--tag', default=[], action='append',
                         help='Tag to reference the experiment. Can be used multiple times.')
     args = parser.parse_args()
@@ -86,102 +138,102 @@ if __name__ == "__main__":
     with console.status(
             f"[bold]Experiment {args.experiment_folder}: Setting things up"
             ) as status:
-
-        repo = git.Repo('.')
         try:
-            assert not repo.is_dirty()
-        except AssertionError:
-            console.log('[bold red]Repertory is not committed.')
-            console.log('Please commit changes before launching an experiment')
-            if args.ignore_git:
-                console.log('Git requirements overidden. Taking previous commit as reference.')
-            else:
+            repo = git.Repo('.')
+            try:
+                assert not repo.is_dirty()
+            except AssertionError:
+                console.log('[bold red]Repertory is not committed.')
+                console.log(
+                        'Please commit changes before launching an experiment')
+                if args.ignore_git:
+                    console.log(
+                            'Git requirements overidden. '
+                            'Taking previous commit as reference.')
+                else:
+                    sys.exit(0)
+
+
+            # Handling experiment directory
+            execute_path = os.path.join(args.experiment_folder, 'execute.sh')
+            if not os.path.exists(execute_path):
+                console.log(
+                        f'[bold red]Execute script {execute_path} not found!')
+                console.log('Quitting...')
                 sys.exit(0)
 
-        # Handling experiment results directory
-        if not os.path.exists(args.results_dir):
-            prompt_create_dir(args.results_dir, console, status)
+            # Experiment database handling
+            if not os.path.exists(args.results_dir):
+                prompt_create_dir(args.results_dir, console, status)
 
-        experiment_id = len([x[1] for x in os.walk(args.results_dir)])
-        experiment_basename = os.path.basename(
-                os.path.normpath(args.experiment_folder))
-        experiment_results_dir = os.path.join(
-                args.results_dir, f'{experiment_id}_{experiment_basename}'
-                )
-        console.log(
-                'Creating experiment results directory: '
-                f'{experiment_results_dir}'
-                )
-        os.mkdir(experiment_results_dir)
+            dB_path = os.path.join(args.results_dir, 'experiments.json')
+            console.log(f'Database of experiments stored in: {dB_path}')
+            dB = TinyDB(dB_path)
 
-        # Handling experiment directory
-        execute_path = os.path.join(args.experiment_folder, 'execute.sh')
-        if not os.path.exists(execute_path):
-            console.log(f'[bold red]Execute script {execute_path} not found!')
-            console.log('Quitting...')
-            sys.exit(0)
-
-        # Experiment database handling
-        dB_path = os.path.join(args.results_dir, 'experiments.json')
-        console.log(f'Database of experiments stored in: {dB_path}')
-        dB = TinyDB(dB_path)
-
-        console.log('Adding experiment to database')
-        dB.insert({
-                'id': experiment_id,
-                'experiment_folder': args.experiment_folder,
-                'status': 'not started',
-                'arguments': args.execute_args,
-                'launch_date': datetime.datetime.now().isoformat(),
-                'experiment_results_dir': experiment_results_dir,
-                'commit_sha': repo.head.object.hexsha,
-                'tags': args.tag
-                })
-
-        # Launching experiment
-        if args.runner == "local":
-            console.log('Launching from local runner')
-            execute_string = f'bash {execute_path} {args.execute_args} {experiment_results_dir}'
-            console.log('Executing command:')
-            console.log(execute_string+'\n')
-            status.update(f"[bold]Experiment {args.experiment_folder}: Running locally"
+            # Handling experiment results directory
+            experiment_id = len(dB)+1
+            experiment_basename = os.path.basename(
+                    os.path.normpath(args.experiment_folder))
+            experiment_results_dir = os.path.join(
+                    args.results_dir, f'{experiment_id}_{experiment_basename}'
                     )
-            f_stdout = open(os.path.join(experiment_results_dir, 'output.txt'), 'w')
-            f_stderr = open(os.path.join(experiment_results_dir, 'error.txt'), 'w')
+            console.log(
+                    'Creating experiment results directory: '
+                    f'{experiment_results_dir}'
+                    )
+            os.mkdir(experiment_results_dir)
+
+            console.log('Adding experiment to database')
+            dB.insert({
+                    'id': experiment_id,
+                    'experiment_folder': args.experiment_folder,
+                    'status': 'not started',
+                    'arguments': args.execute_args,
+                    'launch_date': datetime.datetime.now().isoformat(),
+                    'experiment_results_dir': experiment_results_dir,
+                    'commit_sha': repo.head.object.hexsha,
+                    'tags': args.tag
+                    })
+
+            # Launching experiment
+            if len(args.execute_args) == 0:
+                args.execute_args = ['']
             dB.update({"status": "running"}, Query().id == experiment_id)
-            try:
-                run([execute_path, args.execute_args, experiment_results_dir],
-                    stdout=f_stdout, stderr=f_stderr)
-            except Exception as e:
-                console.log('[bold red]Something went wrong. Check log files!')
-                console.log(e)
-            f_stdout.close()
-            f_stderr.close()
-            console.log('Experiment done.')
-            dB.update({"status": "finished"}, Query().id == experiment_id)
-        else:
-            console.log('Submitting job to HTCondor')
-            job = htcondor.Submit({
-                'executable': execute_path,
-                'arguments': args.execute_args + f' {experiment_results_dir}',
-                'output': os.path.join(experiment_results_dir, 'output.txt'),
-                'error': os.path.join(experiment_results_dir, 'error.txt'),
-                'log': os.path.join(experiment_results_dir, 'log.txt'),
-                'request_cpus': args.n_cpus,
-                'request_memory': args.memory,
-                'getenv': True,
-                'should_transfer_files': 'IF_NEEDED',
-                'when_to_transfer_output': 'ON_EXIT',
-                '+WishedAcctGroup': "group_usmb.listic",
-                '+isFlash': args.is_flash
-                })
-            console.log(job)
-            schedd = htcondor.Schedd() # get the Python representation of the scheduler
-            submit_result = schedd.submit(job) # submit the job
-            console.log(f'Job sumitted to Cluster {submit_result.cluster()}') # print the job's ClusterId
-            submit_info = dict(job)
-            submit_info['cluster'] = submit_result.cluster()
-            dB.update({
-                "status": "running",
-                "submit_info": submit_info 
-                }, Query().id == experiment_id)
+
+            if args.runner == "local":
+                console.log(f'Launching {len(args.execute_args)} executions from local runner')
+                for task_no, execute_args in enumerate(args.execute_args):
+                    execute_locally(console, status, execute_path,
+                                    execute_args, experiment_results_dir,
+                                    task_no+1, len(args.execute_args))
+                dB.update({"status": "finished"}, Query().id == experiment_id)
+
+            else:
+                console.log('Submitting job to HTCondor')
+                console.log(
+                        f'Launching {len(args.execute_args)} executions '
+                        'from HTCondor jobs')
+                cluster_ids = []
+                for task_no, execute_args in enumerate(args.execute_args):
+                    submit_info = {
+                        'executable': execute_path,
+                        'request_cpus': args.n_cpus,
+                        'request_memory': args.memory,
+                        'getenv': True,
+                        'should_transfer_files': 'IF_NEEDED',
+                        'when_to_transfer_output': 'ON_EXIT',
+                        '+WishedAcctGroup': "group_usmb.listic",
+                        '+isFlash': args.is_flash
+                        }
+                    cluster = execute_job(console, status, execute_path, execute_args,
+                                          experiment_results_dir, task_no+1,
+                                          len(args.execute_args), submit_info)
+                    cluster_ids.append(cluster)
+
+                submit_info['cluster_ids'] = cluster_ids
+                dB.update({
+                    "submit_info": submit_info
+                    }, Query().id == experiment_id)
+
+        except KeyboardInterrupt:
+            sys.exit(0)
