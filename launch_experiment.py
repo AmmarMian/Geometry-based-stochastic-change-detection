@@ -41,7 +41,7 @@ def execute_locally(console, status, execute_path, execute_args,
     console.log(f'Executing command: {execute_string}\n')
     status.update(
             f"[bold]Task [{task_no}/{total_tasks}]:[/bold] Experiment "
-            "{args.experiment_folder} with parameters {execute_args}.")
+            f"{args.experiment_folder} with parameters {execute_args}.")
 
     f_stdout = open(os.path.join(experiment_results_dir, 'output.txt'), 'a')
     f_stderr = open(os.path.join(experiment_results_dir, 'error.txt'), 'a')
@@ -69,7 +69,7 @@ def execute_job(console, status, execute_path, execute_args,
     info['output'] = os.path.join(experiment_results_dir, f'output_{task_no}.txt')
     info['error'] = os.path.join(experiment_results_dir, f'error_{task_no}.txt')
     info['log'] = os.path.join(experiment_results_dir, f'log_{task_no}.txt')
-    info['arguments'] = execute_args + f' {experiment_results_dir}'
+    info['arguments'] = f"{execute_args} {experiment_results_dir}"
 
     job = htcondor.Submit(info)
     console.log(f'Info on job [bold]{task_no}[/bold]:')

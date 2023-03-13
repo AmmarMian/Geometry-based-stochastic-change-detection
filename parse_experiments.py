@@ -128,7 +128,7 @@ def show_all_experiments(dB):
 
     for experiment in dB:
         table.add_row(str(experiment['id']), ", ".join(experiment['tags']), 
-                      experiment['experiment_folder'], ", ".join(experiment['arguments']),
+                      experiment['experiment_folder'], ",\n".join(experiment['arguments']),
                       experiment['launch_date'], experiment['status'])
     console_table.print(table)
 
