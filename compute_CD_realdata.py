@@ -16,6 +16,7 @@ from change_detection import (
 )
 from multivariate_images_tools import sliding_windows_treatment_image_time_series_parallel
 
+
 def compute_repeat_statistics(X, args):
     list_statistics, list_args, n_repeats = args
     return [ statistic(np.tile(X, n_repeats), arg) 
@@ -24,13 +25,13 @@ def compute_repeat_statistics(X, args):
 
 
 def parse_algorithms(detectors, a, b):
-    
+
     list_names_possible = [
         'gaussian_glrt', 'scaled_gaussian_glrt',
         'scaled_gaussian_kron_glrt', 'scaled_gaussian_sgd',
         'scaled_gaussian_kron_glrt'
     ]
-    
+
     list_detectors = []
     list_names = []
     list_args = []
@@ -47,7 +48,7 @@ def parse_algorithms(detectors, a, b):
         elif statistic == 'scaled_gaussian_kron_glrt':
             list_detectors.append(scale_and_shape_equality_robust_statistic_kron)
             list_names.append('Scaled Gaussian Kronecker GLRT')
-            list_args.append((a,b))
+            list_args.append((a, b))
         elif statistic == 'scaled_gaussian_sgd':
             list_detectors.append(scale_and_shape_equality_robust_statistic_sgd)
             list_names.append('Scaled Gaussian SGD')
@@ -60,7 +61,7 @@ def parse_algorithms(detectors, a, b):
             raise AssertionError(
                 f'{statistic} algorithm is not recognised. Choices are: {list_names_possible}'
             )
-    
+
     return list_detectors, list_args, list_names
 
 if __name__ == "__main__":
@@ -79,12 +80,14 @@ if __name__ == "__main__":
                         help='name of algorithms to compute. Choice between gaussian_glrt, scaled_gaussian_glrt,'+\
                              'scaled_gaussian_kron_glrt, scaled_gaussian_sgd, scaled_gaussian_kron_sgd', 
                         required=True)
+    parser.add_argument('--data_path', default='data/UAVSAR',
+                        help='Path to data storage')
     args = parser.parse_args()
 
     if args.crop_indexes is not None and len(args.crop_indexes)!=4:
         raise AssertionError(f'{args.crop_indexes} is not to the right format!')
     if args.n_repeats < 1:
-        raise AssertionError(f'n_repeats must be greater or equal to one !')
+        raise AssertionError(f'n_repeats={args.n_repeats} must be greater or equal to one !')
 
     # -----------------------------------------------------------------------------
     # Parameters
@@ -134,7 +137,6 @@ if __name__ == "__main__":
             crop_indexes[0]:crop_indexes[1], 
             crop_indexes[2]:crop_indexes[3]
         ]
-
 
     print("Doing wavelet decomposition")
     center_frequency = 1.26e+9 # GHz, for L Band
