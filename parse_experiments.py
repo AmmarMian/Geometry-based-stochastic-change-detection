@@ -212,7 +212,7 @@ def menu_experiment(experiment):
             return "See concatenation of all outputs from experiment"
         elif entry == choices[1][4:]:
             return "See concatenation of all errors files from experiment"
-        elif entry == choices[2][4:]:
+        elif entry == choices[2][4:] and 'submit_info' in experiment:
             return "See concatenation of all logs from experiment. (Only for a job runner.)"
         else:
             return metadata[entry]
