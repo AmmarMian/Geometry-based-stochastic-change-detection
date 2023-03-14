@@ -7,5 +7,6 @@
 # Brief: environment variables for project
 # =========================================
 
+export PROJECT_NAME="Geometry based stochastic change detection"
 export PROJECT_PATH="/uds_data/listic/amian/research_projects/kronecker_online_clean"
 export CONDA_ENV="kronecker_online"
