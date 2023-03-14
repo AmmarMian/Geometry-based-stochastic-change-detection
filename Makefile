@@ -21,7 +21,7 @@ Realdata: # Simulations on real UAVSAR data
 .PHONY: Scene1
 Scene1: # Simulations on real UAVSAR data, Scene1
 	@{ \
-	CMD="python launch_experiment.py experiments/realdata"; \
+	CMD="python launch_experiment.py experiments/real_data"; \
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"1 10 -d $$DETECTOR\"" ;\
 	done; \
