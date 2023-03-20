@@ -89,17 +89,15 @@ if __name__ == "__main__":
                         help='Path to data storage')
     args = parser.parse_args()
 
-    if args.crop_indexes is not None and len(args.crop_indexes)!=4:
+    if args.crop_indexes is not None and len(args.crop_indexes) != 4:
         raise AssertionError(f'{args.crop_indexes} is not to the right format!')
     if args.n_repeats < 1:
         raise AssertionError(f'n_repeats={args.n_repeats} must be greater or equal to one !')
 
-    print(args.detectors)
-
     # -----------------------------------------------------------------------------
     # Parameters
     # -----------------------------------------------------------------------------
-    data_path = "./data/UAVSAR"
+    data_path = args.data_path
     scene = args.scene
     image_path = os.path.join(data_path, f"Scene_{scene}.npy")
     crop_indexes = args.crop_indexes
@@ -169,7 +167,6 @@ if __name__ == "__main__":
     sits_data = image
     n_rows, n_cols, n_features, n_times  = sits_data.shape
     print('Done')
-
 
     # -----------------------------------------------------------------------------
     # Performing detection

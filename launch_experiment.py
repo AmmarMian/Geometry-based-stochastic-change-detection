@@ -15,7 +15,7 @@ from rich import print as rprint
 from rich.console import Console
 from tinydb import TinyDB, Query
 import datetime
-from subprocess import run
+from subprocess import run, check_output
 import git
 import copy
 import time

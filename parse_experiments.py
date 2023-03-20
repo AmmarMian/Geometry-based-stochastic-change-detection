@@ -231,9 +231,11 @@ def menu_experiment(experiment):
             pydoc.pager(log)
         else:
             rprint(f"[bold green]Executing action {actions[index - base_number + 97]}")
-            run([actions[index - base_number + 97],  # To take into account if submit or not
-                 experiment['experiment_results_dir']])
-
+            try:
+                run([actions[index - base_number + 97],  # To take into account if submit or not
+                     experiment['experiment_results_dir']])
+            except KeyboardInterrupt:
+                pass
         index = menu.show()
 
 

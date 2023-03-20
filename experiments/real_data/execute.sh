@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 # ========================================
 # FileName: execute.sh
 # Date: 10 mars 2023 - 12:07
