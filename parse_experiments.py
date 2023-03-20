@@ -205,7 +205,8 @@ def menu_experiment(experiment):
     for i, action in enumerate(actions):
         title, description = parse_metadata_action(action)
         metadata[title] = description
-    choices += [f'[{chr(i+base_number)}] ' + title for title in metadata.keys()]
+    choices += [f'[{chr(i+base_number)}] ' + title for i, title 
+                in enumerate(metadata.keys())]
 
     def preview_command(entry):
         if entry == choices[0][4:]:
