@@ -105,7 +105,7 @@ if __name__ == "__main__":
         crop_indexes = [int(x) for x in args.crop_indexes]
 
     # Data dimensionality parameters
-    n_repeats = args.n_repeats # number of times we repeat the time series
+    n_repeats = args.n_repeats  # number of times we repeat the time series
     a = 4
     b = 3
 
