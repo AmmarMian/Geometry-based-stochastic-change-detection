@@ -19,7 +19,7 @@ source $SCRIPT_DIR/../../CONFIG.sh
 
 echo ""
 echo "Moving to $PROJECT_PATH"
-cd $PROJECT_PATH
+cd "$PROJECT_PATH"
 
 echo ""
 echo "Activating conda environment: $CONDA_ENV"
