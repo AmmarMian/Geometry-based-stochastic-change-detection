@@ -11,7 +11,7 @@
 import os
 import sys
 import argparse
-import htcondor
+from rich import print as rprint
 from rich.console import Console
 from tinydb import TinyDB, Query
 import datetime
@@ -20,7 +20,13 @@ import git
 import copy
 import time
 import pathlib
-
+try:
+    import htcondor
+    htcondor_available = True
+except ModuleNotFoundError:
+    rprint(
+        "[bold green]HTcondor module not found, job runner is unaivalaible.")
+    htcondor_available = False
 
 def prompt_create_dir(dir_path, console, status):
     console.log(f'Directory {dir_path} does not exist.')
@@ -215,7 +221,7 @@ if __name__ == "__main__":
                                     task_no+1, len(args.execute_args))
                 dB.update({"status": "finished"}, Query().id == experiment_id)
 
-            else:
+            elif htcondor_available:
                 console.log('Submitting job(s) to HTCondor')
                 console.log(
                         f'Launching {len(args.execute_args)} executions '
@@ -248,5 +254,8 @@ if __name__ == "__main__":
                     "submit_info": submit_info
                     }, Query().id == experiment_id)
 
+            else:
+                console.log('[bold red]Sorry impossible to run as job. '
+                            'HTCondor is unaivalaible.')
         except KeyboardInterrupt:
             sys.exit(0)

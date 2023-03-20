@@ -295,7 +295,7 @@ def delete_experiments_menu(dB):
     if choice is not None and len(dB.search(Query().id == ID)) == 1:
         delete_experiment(dB, ID)
     else:
-        rprint('[bold red]ID has no ore more than one match')
+        rprint('[bold red]ID has no or more than one match')
 
 
 def filter_experiments(dB):
