@@ -10,3 +10,4 @@
 export PROJECT_NAME="Geometry based stochastic change detection"
 export PROJECT_PATH="/Users/ammarmian/Desktop/Geometry-based-stochastic-change-detection"
 export CONDA_ENV="kronecker_online"
+export RUNNER="local"

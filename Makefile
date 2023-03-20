@@ -28,7 +28,7 @@ Scene1-full: # Simulations on real UAVSAR data, Scene1. Repeated 5 times tempora
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"1 5 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 8GB --tag scene1 --tag repeat --tag nocrop";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 8GB --tag scene1 --tag repeat --tag nocrop";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -41,7 +41,7 @@ Scene1-crop: # Simulations on real UAVSAR data, Scene1. Cropped and repeated 10 
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"1 10 -c 0 500 0 500 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 8GB --tag scene1 --tag repeat --tag crop";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 8GB --tag scene1 --tag repeat --tag crop";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -54,7 +54,7 @@ Scene2-full: # Simulations on real UAVSAR data, Scene2. Repeated 5 times tempora
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"2 5 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 8GB --tag scene2 --tag repeat --tag nocrop";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 8GB --tag scene2 --tag repeat --tag nocrop";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -67,7 +67,7 @@ Scene2-crop: # Simulations on real UAVSAR data, Scene1. Cropped and repeated 10 
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"2 10 -c 0 500 0 500 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 8GB --tag scene2 --tag repeat --tag crop";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 8GB --tag scene2 --tag repeat --tag crop";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -80,7 +80,7 @@ Scene3-crop: # Simulations on real UAVSAR data, Scene3. Cropped and repeated 5 t
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"3 5 -c 0 500 0 750 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 16GB --tag scene3 --tag repeat --tag crop";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 16GB --tag scene3 --tag repeat --tag crop";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -93,7 +93,7 @@ Scene4-crophightemporal: # Simulations on real UAVSAR data, Scene4. Cropped on t
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"4 10 -c 2800 3000 1600 1800 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 32GB --tag scene4 --tag repeat --tag crop --tag hightemporal";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 32GB --tag scene4 --tag repeat --tag crop --tag hightemporal";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
@@ -106,7 +106,7 @@ Scene4-cropmediumtemporal: # Simulations on real UAVSAR data, Scene4. Cropped on
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"4 5 -c 2500 3000 1400 2200 -d $$DETECTOR\"" ;\
 	done; \
-	CMD="$$CMD --runner job --n_cpus 8 --memory 32GB --tag scene4 --tag repeat --tag crop --tag mediumtemporal";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 8 --memory 32GB --tag scene4 --tag repeat --tag crop --tag mediumtemporal";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
