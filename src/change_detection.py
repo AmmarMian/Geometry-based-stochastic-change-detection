@@ -427,3 +427,4 @@ def Computing_COR_ChangeDetection_UAVSAR(Lambda_H0,Lambda_H1,nPoints):
             false_alarms = (results[:,:,i_s] >= λ) * np.logical_not(ground_truth)
             pd_array[i_λ, i_s] = good_detection.sum() / (ground_truth==1).sum()
             pfa_array[i_λ, i_s] = false_alarms.sum() / (ground_truth==0).sum()
+        return pd_array, pfa_array

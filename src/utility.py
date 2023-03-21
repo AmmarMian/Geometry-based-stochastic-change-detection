@@ -388,4 +388,3 @@ def matprint(mat, fmt="g"):
         for i, y in enumerate(x):
             print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
         print("")
-
