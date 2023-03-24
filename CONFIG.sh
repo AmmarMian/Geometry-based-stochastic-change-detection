@@ -8,7 +8,7 @@
 # =========================================
 
 export PROJECT_NAME="Geometry based stochastic change detection"
-export PROJECT_PATH="/Users/ammarmian/Desktop/Geometry-based-stochastic-change-detection"
+export PROJECT_PATH="/uds_data/listic/amian/research_projects/Geometry-based-stochastic-change-detection"
 export CONDA_ENV="kronecker_online"
-export RUNNER="local"
-export DATA_PATH="~/Desktop/UAVSAR"
+export RUNNER="job"
+export DATA_PATH="data/UAVSAR"
