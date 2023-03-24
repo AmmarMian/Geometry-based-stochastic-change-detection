@@ -584,7 +584,7 @@ def estimation_cov_kronecker_MM(X, a, b, tol=0.001, iter_max=30,
             pbar_v.set_description(f'(err={delta})', refresh=True)
 
     if iteration == iter_max:
-        logging.info('student_t_estimator_covariance_mle: recursive algorithm did not converge')
+        logging.info('Kronecker MM: recursive algorithm did not converge')
 
     if return_tau:
         return A, B, tol, iteration, M_denominator/a*b
