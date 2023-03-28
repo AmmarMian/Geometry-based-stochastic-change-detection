@@ -586,10 +586,11 @@ def estimation_cov_kronecker_MM(X, a, b, tol=0.001, iter_max=30,
     if iteration == iter_max:
         logging.info('Kronecker MM: recursive algorithm did not converge')
 
+    # TODO: Understand why we estimate A.T and not A...
     if return_tau:
-        return A, B, tol, iteration, M_denominator/a*b
+        return A.T, B, tol, iteration, M_denominator/a*b
     else:
-        return A, B, tol, iteration
+        return A.T, B, tol, iteration
 
 def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
                                 verbosity=False, return_tau=False):
@@ -690,9 +691,9 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
         logging.info('student_t_estimator_covariance_mle: recursive algorithm did not converge')
 
     if return_tau:
-        return A, B, tol, iteration, M_denominator/a*b
+        return A.T, B, tol, iteration, M_denominator/a*b
     else:
-        return A, B, tol, iteration
+        return A.T, B, tol, iteration
 
 
 def tyler_estimator_covariance_matandtext(X, tol=0.0001, iter_max=20, return_tau=False):

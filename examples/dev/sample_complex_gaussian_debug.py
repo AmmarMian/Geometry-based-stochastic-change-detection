@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme(style='darkgrid')
+import plotille
 from joblib import Parallel, delayed
 from tqdm import trange, tqdm
 
@@ -35,18 +36,20 @@ if __name__ == "__main__":
 
     # Simulation parameters
     # -------------------------------------------------------------------------
-    a = 3
-    b = 4
+    a = 2
+    b = 3
     A = generate_covariance_toeplitz(0.3+0.7j, a)
     B = generate_covariance_toeplitz(0.1+0.1j, b)
+    # A = generate_covariance_toeplitz(0.3, a)
+    # B = generate_covariance_toeplitz(0.7, b)
 
     # Normalising by the determinant and applying Kronecker structure
     A, B = [M/(np.abs(np.linalg.det(M))**(1/len(M)))
             for M in (A, B)]
     Sigma = np.kron(A, B)
 
-    n_trials = 1000
-    n_samples_list = np.unique(np.logspace(1.2, 3, 10, base=a*b, dtype=int))
+    n_trials = 64
+    n_samples_list = np.unique(np.logspace(1.2, 2.5, 10, base=a*b, dtype=int))
 
     # Definition of a single MonteCarlo Trial
     def one_trial(trial_no):
@@ -59,8 +62,9 @@ if __name__ == "__main__":
                 )
             Sigma_scm = np.cov(X.T)
             A_MM, B_MM, _, _ = estimation_cov_kronecker_MM(X, a, b)
+            A_MM, B_MM = [M/(np.abs(np.linalg.det(M))**(1/len(M)))
+                for M in (A_MM, B_MM)]
             Sigma_Kron_MM = np.kron(A_MM, B_MM)
-            Sigma_Kron_MM = Sigma_Kron_MM/(np.abs(np.linalg.det(Sigma_Kron_MM))**(1/(a*b)))
             Sigma_Tyler, _, _ = tyler_estimator_covariance(X.T)
             Sigma_Tyler = Sigma_Tyler/(np.abs(np.linalg.det(Sigma_Tyler))**(1/(a*b)))
 
@@ -95,3 +99,15 @@ if __name__ == "__main__":
     plt.xlabel('$N$')
     plt.ylabel('MSE')
     plt.show()
+
+    # Terminal plot when GUI not available
+    fig = plotille.Figure()
+    fig.width = 50
+    fig.height = 15
+    fig.x_label = 'log(N)'
+    fig.y_label = 'log(MSE)'
+    fig.set_x_limits(min_=np.log10(np.min(n_samples_list)), max_=np.log10(np.max(n_samples_list)))
+    fig.plot(np.log10(n_samples_list), np.log10(MSE_SCM), label='SCM')
+    fig.plot(np.log10(n_samples_list), np.log10(MSE_Kron_MM), label="Kron MM")
+    fig.plot(np.log10(n_samples_list), np.log10(MSE_Tyler), label="Scaled-Gaussian Tyler")
+    print(fig.show(legend=True))
