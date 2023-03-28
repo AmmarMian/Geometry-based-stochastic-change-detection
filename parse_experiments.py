@@ -76,7 +76,8 @@ def select_experiment_menu(dB):
     if index is None:
         return None
     else:
-        return index + 1
+        ID = int(choices[index].split(':')[0])
+        return ID
 
 
 def update_status_jobs(dB):
@@ -225,7 +226,7 @@ def menu_experiment(experiment):
     index = menu.show()
     while index is not None:
         if index == 0:
-            print(output)
+            pydoc.pager(output)
         elif index == 1:
             pydoc.pager(error)
         elif index == 2 and 'submit_info' in experiment:
