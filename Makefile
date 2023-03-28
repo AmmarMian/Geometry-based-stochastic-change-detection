@@ -78,7 +78,7 @@ Scene3-crop: # Simulations on real UAVSAR data, Scene3. Cropped and repeated 5 t
 	@{ \
 	CMD="python launch_experiment.py experiments/real_data"; \
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
-		CMD="$$CMD --execute_args \"3 5 -c 0 500 0 750 -d $$DETECTOR--data_path $$DATA_PATH\"" ;\
+		CMD="$$CMD --execute_args \"3 5 -c 0 500 0 750 -d $$DETECTOR --data_path $$DATA_PATH\"" ;\
 	done; \
 	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 16GB --tag scene3 --tag repeat --tag crop";\
 	echo "Evaluating command: $$CMD"; \
