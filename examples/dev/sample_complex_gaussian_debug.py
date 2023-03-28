@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     # Simulation parameters
     # -------------------------------------------------------------------------
-    a = 2
-    b = 3
+    a = 3
+    b = 4
     A = generate_covariance_toeplitz(0.3+0.7j, a)
     B = generate_covariance_toeplitz(0.1+0.1j, b)
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             for M in (A, B)]
     Sigma = np.kron(A, B)
 
-    n_trials = 100
+    n_trials = 1000
     n_samples_list = np.unique(np.logspace(1.2, 3, 10, base=a*b, dtype=int))
 
     # Definition of a single MonteCarlo Trial
