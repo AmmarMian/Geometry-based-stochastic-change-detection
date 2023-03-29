@@ -28,9 +28,9 @@ A_H0, A_H1, B_H0, B_H1 = [
             for X in (A_H0, A_H1, B_H0, B_H1)
         ]
 
-n_trials = 10000
+n_trials = 5000
 n_points_roc = 30
-n_batches_list = [2, 5, 10, 25, 50, 75, 100, 250, 500]
+n_batches_list = [2, 5, 10, 25, 50, 75, 100, 200]
 batch_no_change = lambda n_batches: int(n_batches/2)
 n_samples = a*b+1
 
