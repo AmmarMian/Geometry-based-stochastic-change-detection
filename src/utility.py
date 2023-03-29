@@ -388,3 +388,20 @@ def matprint(mat, fmt="g"):
         for i, y in enumerate(x):
             print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
         print("")
+
+
+def compute_cor(statistic_H0: np.ndarray,
+                statistic_H1: np.ndarray,
+                n_points: int = 30) -> tuple:
+    # Sorting H0 array to obtain threshold values
+    threshold_values = np.sort(statistic_H0)[::-1]
+    idx = np.round(np.linspace(0, len(statistic_H0) - 1, n_points)).astype(int)
+    threshold_values = threshold_values[idx]
+
+    # Measuring Pfa and Pd for each value of threshold
+    P_fa, P_d = np.zeros((n_points,)), np.zeros((n_points,))
+    for i, thresh_value in enumerate(threshold_values):
+        P_fa[i] = np.sum(statistic_H0 >= thresh_value)/len(statistic_H0)
+        P_d[i] = np.sum(statistic_H1 >= thresh_value)/len(statistic_H1)
+
+    return P_fa, P_d

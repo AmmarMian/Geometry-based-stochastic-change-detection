@@ -235,7 +235,8 @@ def menu_experiment(experiment):
             rprint(f"[bold green]Executing action {actions[index - base_number + 97]}")
             try:
                 run([actions[index - base_number + 97],  # To take into account if submit or not
-                     experiment['experiment_results_dir']])
+                     experiment['experiment_results_dir'],
+                     experiment['commit_sha']])
             except KeyboardInterrupt:
                 pass
         index = menu.show()

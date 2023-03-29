@@ -8,57 +8,41 @@
 # detection scenario.
 # =========================================
 
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), '../src'))
-
 import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 from tqdm import trange, tqdm
+from rich import print as rprint
+import plotille
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), '../src'))
+
 
 from utility import (
     generate_covariance_toeplitz,
-    sample_complex_gaussian
+    sample_complex_gaussian,
+    compute_cor
 )
 from change_detection import (
-    Computing_COR_ChangeDetection,
     scale_and_shape_equality_robust_statistic,
     scale_and_shape_equality_robust_statistic_kron,
     scale_and_shape_equality_robust_statistic_sgd,
     scale_and_shape_equality_robust_statistic_sgd_kron,
     covariance_equality_glrt_gaussian_statistic
 )
-from rich import print as rprint
-import plotille
 
-
-def compute_cor(statistic_H0: np.ndarray,
-                statistic_H1: np.ndarray,
-                n_points: int = 30) -> tuple:
-    # Sorting H0 array to obtain threshold values
-    threshold_values = np.sort(statistic_H0)[::-1]
-    idx = np.round(np.linspace(0, len(statistic_H0) - 1, n_points)).astype(int)
-    threshold_values = threshold_values[idx]
-
-    # Measuring Pfa and Pd for each value of threshold
-    P_fa, P_d = np.zeros((n_points,)), np.zeros((n_points,))
-    for i, thresh_value in enumerate(threshold_values):
-        P_fa[i] = np.sum(statistic_H0 >= thresh_value)/len(statistic_H0)
-        P_d[i] = np.sum(statistic_H1 >= thresh_value)/len(statistic_H1)
-
-    return P_fa, P_d
 
 if __name__ == "__main__":
 
     # Simulation parameters
     # -------------------------------------------------------------------------
-    a = 2
-    b = 3
+    a = 3
+    b = 4
     A_H0 = generate_covariance_toeplitz(0.3+0.7j, a)
     A_H1 = generate_covariance_toeplitz(0.3+0.5j, a)
-    B_H0 = generate_covariance_toeplitz(0.3+0.7j, b)
-    B_H1 = generate_covariance_toeplitz(0.5+0.7j, b)
+    B_H0 = generate_covariance_toeplitz(0.3+0.6j, b)
+    B_H1 = generate_covariance_toeplitz(0.4+0.5j, b)
 
     # Normalising by the determinant and applying Kronecker structure
     A_H0, A_H1, B_H0, B_H1 = [
@@ -67,9 +51,9 @@ if __name__ == "__main__":
             ]
     Sigma_H0, Sigma_H1 = np.kron(A_H0, B_H0), np.kron(A_H1, B_H1)
 
-    n_trials = 100
+    n_trials = 1000
     n_points_roc = 20
-    n_batches_list = [2, 5, 10, 25] #np.unique(np.logspace(0.5, 1.5, 2, dtype=int))
+    n_batches_list = [2, 5, 10, 25, 50, 75] #np.unique(np.logspace(0.5, 1.5, 2, dtype=int))
     batch_no_change = lambda n_batches: int(n_batches/2)
     n_samples = 2*a*b
 
@@ -148,7 +132,7 @@ if __name__ == "__main__":
         )
 
     # Organising results for plots
-    markers = ['o', 'x', '+', '□', '◇']
+    markers = ['o', 'x', '+', '□', '◇', '⊗', '⌀', '⏹']
     for n_batches in n_batches_list:
         plt.figure()
         fig = plotille.Figure()
@@ -164,7 +148,7 @@ if __name__ == "__main__":
             statistic_values_H1 = [results[trial_no][n_batches]['H1'][statistic_name]
                                    for trial_no in range(n_trials)]
 
-            pfa, pd = compute_cor( 
+            pfa, pd = compute_cor(
                     np.array(statistic_values_H0),
                     np.array(statistic_values_H1),
                     n_points_roc)
@@ -172,11 +156,64 @@ if __name__ == "__main__":
             fig.plot(pfa, pd, label=statistic_name, marker=markers[i])
 
         rprint(f"[bold red]Simulation with n_batches={n_batches}")
-        rprint(pfa)
-        rprint(pd)
         print('\n')
         print(fig.show(legend=True))
         print('\n\n\n')
         plt.legend()
         plt.title(f'n_batches = {n_batches}')
+
+    # Plot comparing GLRT with SGD
+    for statistic_name_glrt, statistic_name_sgd in zip(
+        ['Scaled Gaussian GLRT', 'Scaled Gaussian Kronecker GLRT'],
+        ['Scaled Gaussian SGD', 'Scaled Gaussian Kronecker SGD']):
+        plt.figure()
+        fig = plotille.Figure()
+        fig.height = 15
+        fig.width = 50
+        fig.x_label = 'Pfa'
+        fig.y_label = 'Pd'
+        fig.set_x_limits(min_=0, max_=1.05)
+        fig.set_y_limits(min_=0, max_=1.05)
+
+        statistic_values_H0 = [results[trial_no][n_batches_list[-1]]['H0'][statistic_name_glrt]
+                               for trial_no in range(n_trials)]
+        statistic_values_H1 = [results[trial_no][n_batches_list[-1]]['H1'][statistic_name_glrt]
+                               for trial_no in range(n_trials)]
+        pfa, pd = compute_cor(
+                np.array(statistic_values_H0),
+                np.array(statistic_values_H1),
+                n_points_roc)
+        plt.plot(
+            pfa, pd,
+            label=f'{statistic_name_glrt}: n_batches={n_batches_list[-1]}'
+        )
+        fig.plot(
+            pfa, pd,
+            label=f'{statistic_name_glrt}: n_batches={n_batches_list[-1]}',
+            marker='⎈'
+        )
+        for i, n_batches in enumerate(n_batches_list):
+            statistic_values_H0 = [results[trial_no][n_batches]['H0'][statistic_name_sgd]
+                                   for trial_no in range(n_trials)]
+            statistic_values_H1 = [results[trial_no][n_batches]['H1'][statistic_name_sgd]
+                                   for trial_no in range(n_trials)]
+
+            pfa, pd = compute_cor(
+                    np.array(statistic_values_H0),
+                    np.array(statistic_values_H1),
+                    n_points_roc)
+            plt.plot(
+                pfa, pd,
+                label=f'{statistic_name_sgd}: n_batches={n_batches}'
+            )
+            fig.plot(
+                pfa, pd,
+                label=f'{statistic_name_sgd}: n_batches={n_batches}',
+                marker=markers[i]
+            )
+        rprint(f"[bold red]Results for {statistic_name_glrt}:")
+        print('\n')
+        print(fig.show(legend=True))
+        print('\n\n\n')
+
     plt.show()

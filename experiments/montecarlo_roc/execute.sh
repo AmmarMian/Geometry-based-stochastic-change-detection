@@ -27,6 +27,6 @@ eval "$(conda shell.bash hook)"
 conda activate $CONDA_ENV
 
 echo ""
-SCRIPT="python experiments/real_data/compute_CD_realdata.py $ARGUMENTS $RESULTS_DIR "
+SCRIPT="python experiments/real_data/compute_roc.py $RESULTS_DIR $ARGUMENTS"
 echo "Now launching script: $SCRIPT"
 eval $SCRIPT
