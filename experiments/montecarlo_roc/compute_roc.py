@@ -66,11 +66,14 @@ if __name__ == "__main__":
                         Sigma_H0, random_state=rng).T * np.sqrt(tau_0)
 
         # Generating no change data part of H1 scenario
+        if config.nu_0 is not None:
+            tau_0 = rng.gamma(config.nu_0, size=config.n_samples)
+        else:
+            tau_0 = 1
         if config.nu_1 is not None:
-            tau_1 = rng.gamma(config.nu_0, size=config.n_samples)
+            tau_1 = rng.gamma(config.nu_1, size=config.n_samples)
         else:
             tau_1 = 1
-        tau_1 = rng.gamma(config.nu_1, size=config.n_samples)
         X_H1_global = np.zeros((config.a*config.b, config.n_samples,
                                 config.batch_no_change(n_batches)),
                                dtype=complex)

@@ -15,7 +15,7 @@ import os
 if os.path.exists('$RESULTS_DIR/info.json'):
     with open('$RESULTS_DIR/info.json', 'r') as f:
         data = json.load(f)
-    config_file = data['arguments']
+    config_file = data['arguments'][0]
 elif os.path.exists('$RESULTS_DIR/artifact.pkl'):
     with open('$RESULTS_DIR/artifact.pkl', 'rb') as f:
         data = pickle.load(f)
@@ -23,7 +23,8 @@ elif os.path.exists('$RESULTS_DIR/artifact.pkl'):
 else:
     config_file = None
 if config_file is not None:
-    subprocess.run(["git", "show", f"$COMMIT_SHA:{data['config_file']}"])
+    print(config_file)
+    subprocess.run(["git", "show", f"$COMMIT_SHA:{config_file}"])
 else:
     print('Sorry, config_file not available. Probably will be available after experiment ended.')
 EOF
