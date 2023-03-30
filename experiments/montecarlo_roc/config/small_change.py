@@ -21,6 +21,8 @@ A_H0 = generate_covariance_toeplitz(0.3+0.7j, a)
 A_H1 = generate_covariance_toeplitz(0.3+0.5j, a)
 B_H0 = generate_covariance_toeplitz(0.3+0.6j, b)
 B_H1 = generate_covariance_toeplitz(0.4+0.5j, b)
+nu_0 = 1
+nu_1 = 1
 
 # Normalising by the determinant and applying Kronecker structure
 A_H0, A_H1, B_H0, B_H1 = [
@@ -28,9 +30,9 @@ A_H0, A_H1, B_H0, B_H1 = [
             for X in (A_H0, A_H1, B_H0, B_H1)
         ]
 
-n_trials = 5000
+n_trials = 100
 n_points_roc = 30
-n_batches_list = [2, 5, 10, 25, 50, 75, 100, 200]
+n_batches_list = [2, 5, 10, 25]
 batch_no_change = lambda n_batches: int(n_batches/2)
 n_samples = a*b+1
 
