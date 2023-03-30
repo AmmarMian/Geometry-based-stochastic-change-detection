@@ -9,11 +9,22 @@ COMMIT_SHA=${BASH_ARGV[0]}
 python - << EOF
 import pickle
 import subprocess
+import json
+import os
 
-with open('$RESULTS_DIR/artifact.pkl', 'rb') as f:
-    data = pickle.load(f)
-
-subprocess.run(["git", "show", f"$COMMIT_SHA:{data['config_file']}"])
-
+if os.path.exists('$RESULTS_DIR/info.json'):
+    with open('$RESULTS_DIR/info.json', 'r') as f:
+        data = json.load(f)
+    config_file = data['arguments']
+elif os.path.exists('$RESULTS_DIR/artifact.pkl'):
+    with open('$RESULTS_DIR/artifact.pkl', 'rb') as f:
+        data = pickle.load(f)
+        config_file = data['config_file']
+else:
+    config_file = None
+if config_file is not None:
+    subprocess.run(["git", "show", f"$COMMIT_SHA:{data['config_file']}"])
+else:
+    print('Sorry, config_file not available. Probably will be available after experiment ended.')
 EOF
 ) | less

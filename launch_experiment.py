@@ -14,6 +14,7 @@ import argparse
 from rich import print as rprint
 from rich.console import Console
 from tinydb import TinyDB, Query
+import json
 import datetime
 from subprocess import run, check_output
 import git
@@ -196,7 +197,8 @@ if __name__ == "__main__":
 
             console.log('Adding experiment '
                         f'[bold]{experiment_id}[/bold] to database')
-            dB.insert({
+
+            experiment_data = {
                     'id': experiment_id,
                     'experiment_folder': args.experiment_folder,
                     'status': 'not started',
@@ -205,7 +207,10 @@ if __name__ == "__main__":
                     'experiment_results_dir': experiment_results_dir,
                     'commit_sha': repo.head.object.hexsha,
                     'tags': args.tag
-                    })
+                    }
+            dB.insert(experiment_data)
+            with open(os.path.join(experiment_results_dir, 'info.json'), 'w') as f:
+                json.dump(experiment_data, f)
 
             # Launching experiment
             if len(args.execute_args) == 0:
