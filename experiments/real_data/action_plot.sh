@@ -11,9 +11,10 @@ import re
 import sys
 
 if __name__ == "__main__":
-    results_dir = "${BASH_ARGV[0]}"
+    results_dir = "${BASH_ARGV[1]}"
     rx = re.compile('artifact_(.*)pkl')
     search = list(os.walk(results_dir))[0]
+    print(search)
     results_files = [file for file in search[-1]
                      if rx.match(file)]
 
