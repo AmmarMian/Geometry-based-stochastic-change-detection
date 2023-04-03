@@ -99,7 +99,7 @@ def stochastic_gradient_scaledgaussian(X, init=None,
     manifold = ScaledGaussianFIM(n_features, n_samples)
     for n in range(n_batches):
         r_Sigma, r_tau = rgrad_scaledgaussian(X[n], Sigma, tau)
-        
+
         Sigma_new, tau_new = manifold.retr(
             (Sigma, tau), 
             (-lr/(n+1)*r_Sigma, -lr/(n+1)*r_tau)
@@ -121,7 +121,7 @@ def stochastic_gradient_scaledgaussian(X, init=None,
                 )
 
         Sigma, tau = Sigma_new, tau_new
-    
+
     if verbosity > 0:
         pbar.close()
 
@@ -130,7 +130,7 @@ def stochastic_gradient_scaledgaussian(X, init=None,
     else:
         log = {'x': iterations, 'f(x)':cost_function_values}
         return Sigma, tau, log
-    
+
 def stochastic_gradient_scaledgaussian_kronecker(X, a, b, init=None,
                                     lr=1, verbosity=0,
                                     return_value="AB"):
