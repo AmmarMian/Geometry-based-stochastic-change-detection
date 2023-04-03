@@ -72,12 +72,12 @@ def parse_algorithms(detectors, a, b):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Change detection on UAVSAR images')
-    parser.add_argument('results_dir', metavar='r', type=str,
-                        help='Directory where to store the results')
     parser.add_argument('scene', metavar='s', type=int, default=1,
                         help='Scene to compute the change detection')
     parser.add_argument('n_repeats', type=int, default=1,
                         help='number of times we repeat time series')
+    parser.add_argument('results_dir', metavar='r', type=str,
+                        help='Directory where to store the results')
     parser.add_argument('-c','--crop_indexes', nargs='+', 
                         help='Cropping indexes of the image', 
                         required=False, default=None) 
