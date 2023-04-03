@@ -93,7 +93,7 @@ Scene4-crophightemporal: # Simulations on real UAVSAR data, Scene4. Cropped on t
 	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
 		CMD="$$CMD --execute_args \"4 10 -c 2800 3000 1600 1800 -d $$DETECTOR --data_path $$DATA_PATH\"" ;\
 	done; \
-	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 32GB --tag scene4 --tag repeat --tag crop --tag hightemporal";\
+	CMD="$$CMD --runner $$RUNNER --n_cpus 6 --memory 8GB --tag scene4 --tag repeat --tag crop --tag hightemporal";\
 	echo "Evaluating command: $$CMD"; \
 	eval $$CMD; \
 	}
