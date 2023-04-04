@@ -5,8 +5,8 @@
 # Author: Ammar Mian
 # Email: ammar.mian@univ-smb.fr
 # GitHub: https://github.com/ammarmian
-# Brief: Script to launch change detection
-# on real data
+# Brief: Script to launch montecarlo
+# simuation for a change detection task
 # =========================================
 
 echo "$@"

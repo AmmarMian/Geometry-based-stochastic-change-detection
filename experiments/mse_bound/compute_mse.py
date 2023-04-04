@@ -1,11 +1,10 @@
 # ========================================
-# FileName: change_detection_roc.py
+# FileName: compute_mse.py
 # Date: 21 mars 2023 - 11:10
 # Author: Ammar Mian
 # Email: ammar.mian@univ-smb.fr
 # GitHub: https://github.com/ammarmian
-# Brief: ROC for a simulated change
-# detection scenario.
+# Brief: Compute the MSE of the estimators
 # =========================================
 
 import argparse
@@ -23,85 +22,115 @@ sys.path.append(os.path.join(os.path.dirname(sys.argv[0]), '../../src'))
 
 
 from utility import (
-    compute_cor,
     sample_complex_gaussian
 )
+
+
+def parse_results(results: list, type_algo: str, config: any) -> dict:
+    """Parse results list to compute mean along trials for each estimator.
+    type_algo = 'offline' or 'online'"""
+    results_dict = {}
+    for estimator in results[0][config.n_batches_list[0]][type_algo]:
+        results_dict[estimator] = {}
+        for element in ['A', 'B', 'tau']:
+            mse_element = np.mean(
+                np.array([[results[trial_no][n_batches][type_algo][estimator][element]
+                           for n_batches in config.n_batches_list]
+                          for trial_no in range(config.n_trials)]),
+                axis=0)
+            results_dict[estimator][element] = mse_element
+    return results_dict
+
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Monte-carlo Change Detection ROC simulation')
     parser.add_argument('config_file', type=str,
                         help="Experiment parameters file: python file defining:"
-                        " a, b, A_H0, B_H0, A_H1, B_H1, n_trials, n_points_roc,"
-                        " n_batches_list, statistics, batch_no_change, n_samples")
+                        " a, b, A, B, tau, n_trials, n_samples, n_batches_list"
+                        " estimators_offline, estimators_online, mse_function_A"
+                        " mse_function_B, mse_function_tau")
     parser.add_argument('results_dir', metavar='r', type=str,
                         help='Directory where to store the results')
     args = parser.parse_args()
 
-
     # Importing variables from config_file
     sys.path.append(os.path.dirname(args.config_file))
     config = import_module(Path(args.config_file).stem)
-    Sigma_H0, Sigma_H1 = np.kron(config.A_H0, config.B_H0), np.kron(config.A_H1, config.B_H1)
+    Sigma = np.kron(config.A, config.B)
 
     # Redirecting tqdm to file
     f_tqdm = open(os.path.join(args.results_dir, 'progress.log'), 'w')
 
     # Definition of a single MonteCarlo Trial
     def one_trial(trial_no):
+        """One Montecarlo Tiral for computing MSE of estimators
+        online and offline."""
         rng = np.random.default_rng(trial_no)
 
         # To save time, we generate data with the max number of batches
         # then just take the increasing needed  number of batches
         n_batches = max(config.n_batches_list)
         # Generating data H0
-        X_H0_global = np.zeros((config.a*config.b, config.n_samples, n_batches), dtype=complex)
-        if config.nu_0 is not None:
-            tau_0 = rng.gamma(config.nu_0, size=config.n_samples)
-        else:
-            tau_0 = 1
+        X_global = np.zeros((config.a*config.b, config.n_samples, n_batches),
+                            dtype=complex)
         for batch_no in range(n_batches):
-             X_H0_global[..., batch_no] = sample_complex_gaussian(
-                        config.n_samples, np.zeros((config.a*config.b,), dtype=complex),
-                        Sigma_H0, random_state=rng).T * np.sqrt(tau_0)
-
-        # Generating no change data part of H1 scenario
-        if config.nu_0 is not None:
-            tau_0 = rng.gamma(config.nu_0, size=config.n_samples)
-        else:
-            tau_0 = 1
-        if config.nu_1 is not None:
-            tau_1 = rng.gamma(config.nu_1, size=config.n_samples)
-        else:
-            tau_1 = 1
-        X_H1_global = np.zeros((config.a*config.b, config.n_samples,
-                                config.batch_no_change(n_batches)),
-                               dtype=complex)
-        for batch_no in range(config.batch_no_change(n_batches)):
-            X_H1_global[..., batch_no] = sample_complex_gaussian(
-                        config.n_samples, np.zeros((config.a*config.b,), dtype=complex),
-                        Sigma_H0, random_state=rng).T * np.sqrt(tau_0)
+            X_global[..., batch_no] = sample_complex_gaussian(
+                        config.n_samples,
+                        np.zeros((config.a*config.b,), dtype=complex),
+                        Sigma, random_state=rng).T * np.sqrt(config.tau.flatten())
 
         results = {'trial_no': trial_no}
-        for n_batches in config.n_batches_list:
-            # Organising data from the corresponding number of batches
-            X_H0 = X_H0_global[..., :n_batches]
-            X_H1 = np.zeros((config.a*config.b, config.n_samples, n_batches), dtype=complex)
-            X_H1[..., :config.batch_no_change(n_batches)] = X_H1_global[..., :config.batch_no_change(n_batches)]
-            for batch_no in range(config.batch_no_change(n_batches), n_batches):
-                X_H1[..., batch_no] = sample_complex_gaussian(
-                            config.n_samples, np.zeros((config.a*config.b,), dtype=complex),
-                            Sigma_H1, random_state=rng).T * np.sqrt(tau_1)
 
-            # Computing statistics values on data
-            results[n_batches] = {}
-            for X, scenario in zip([X_H0, X_H1], ['H0', 'H1']):
-                results[n_batches][scenario] = {}
-                for statistic_name in config.statistics:
-                    results[n_batches][scenario][statistic_name] = \
-                            config.statistics[statistic_name]['function'](
-                                X, config.statistics[statistic_name]['args']
-                            )
+        # Initialising estimates online
+        A_est_online, B_est_online, tau_est_online = {}, {}, {}
+        for estimator in config.estimators_online:
+            A_est_online[estimator] = config.estimators_online[estimator]['init'][0]
+            B_est_online[estimator] = config.estimators_online[estimator]['init'][1]
+            tau_est_online[estimator] = config.estimators_online[estimator]['init'][2]
+        n_batches_start = 0
+
+        for n_batches in config.n_batches_list:
+            results[n_batches] = {'offline': {}, 'online': {}}
+
+            # Organising data from the corresponding number of batches
+            X = X_global[..., :n_batches]
+
+            # Computing estimate offline
+            for estimator in config.estimators_offline:
+                A_est, B_est, tau_est = config.estimators_offline[estimator](X)
+                results[n_batches]['offline'][estimator] = {
+                    'A': config.mse_function_A(A_est, config.A),
+                    'B': config.mse_function_B(B_est, config.B),
+                    'tau': config.mse_function_tau(tau_est, config.tau)
+                }
+
+            # Computing estimate online by doing stochastic gradient descent
+            # iteration
+            for estimator in config.estimators_online:
+                # Doing as many iterations as needed to get to the current
+                # number of batches
+                for i_batch in range(n_batches_start, n_batches):
+                    # Computing riemannian gradient
+                    r_A, r_B, r_tau = config.estimators_online[estimator]['rgrad'](
+                            X_global[..., i_batch].T, A_est_online[estimator],
+                            B_est_online[estimator],
+                            tau_est_online[estimator])
+                    # Retraction on the manifold
+                    A_est_online[estimator], B_est_online[estimator], tau_est_online[estimator] = \
+                        config.estimators_online[estimator]['manifold'].retr(
+                           (A_est_online[estimator], B_est_online[estimator], tau_est_online[estimator]),
+                           [-(config.estimators_online[estimator]['lr']/(i_batch+1))*r_x
+                            for r_x in [r_A, r_B, r_tau]]
+                        )
+                n_batches_start = n_batches
+
+                results[n_batches]['online'][estimator] = {
+                    'A': config.mse_function_A(A_est_online[estimator], config.A),
+                    'B': config.mse_function_B(B_est_online[estimator], config.B),
+                    'tau': config.mse_function_tau(tau_est_online[estimator], config.tau)
+                }
+
         return results
 
     # Launching parallel processing
@@ -114,76 +143,37 @@ if __name__ == "__main__":
     f_tqdm.close()
 
     # Organising results for plots
+    results_element_offline = parse_results(results, 'offline', config)
+    results_element_online = parse_results(results, 'online', config)
+    results_tosave = {
+                'online': results_element_online,
+                'offline': results_element_offline
+            }
+
     markers = ['o', 'x', '+', '□', '◇', '⊗', '⌀', '⏹']
-    results_tosave = {}
-    for n_batches in config.n_batches_list:
+    ICRB_A = lambda n: (config.a**2-1)/(config.b*config.n_samples*n)
+    ICRB_B = lambda n: (config.b**2-1)/(config.a*config.n_samples*n)
+    ICRB_tau = lambda n: 1/(n*config.a*config.b)
+    for element, icrb in zip(['A', 'B', 'tau'], [ICRB_A, ICRB_B, ICRB_tau]):
         fig = plotille.Figure()
         fig.height = 15
         fig.width = 50
-        fig.x_label = 'Pfa'
-        fig.y_label = 'Pd'
-        fig.set_x_limits(min_=0, max_=1.05)
-        fig.set_y_limits(min_=0, max_=1.05)
-        results_tosave[n_batches] = {}
-        for i, statistic_name in enumerate(config.statistics):
-            statistic_values_H0 = [results[trial_no][n_batches]['H0'][statistic_name]
-                                   for trial_no in range(config.n_trials)]
-            statistic_values_H1 = [results[trial_no][n_batches]['H1'][statistic_name]
-                                   for trial_no in range(config.n_trials)]
+        fig.x_label = 'log(Number of batches)'
+        fig.y_label = f'log(MSE) {element}'
 
-            pfa, pd = compute_cor(
-                    np.array(statistic_values_H0),
-                    np.array(statistic_values_H1),
-                    config.n_points_roc)
-            results_tosave[n_batches][statistic_name] = {'pfa': pfa, 'pd': pd}
-            fig.plot(pfa, pd, label=statistic_name, marker=markers[i])
+        for i, results_dict in enumerate(
+                [results_element_offline, results_element_online]):
+            for j, estimator in enumerate(results_dict):
+                fig.plot(np.log10(config.n_batches_list),
+                         np.log10(results_dict[estimator][element]),
+                         label=estimator,
+                         marker=markers[i*2+j])
 
-        rprint(f"[bold red]Simulation with n_batches={n_batches}")
-        print('\n')
-        print(fig.show(legend=True))
-        print('\n\n\n')
+        # Computing ICRB
+        icrb_element = icrb(np.array(config.n_batches_list))
+        fig.plot(np.log10(config.n_batches_list), np.log10(icrb_element),
+                 label=f'ICRB {element}', marker='*')
 
-    # Plot comparing GLRT with SGD
-    for statistic_name_glrt, statistic_name_sgd in zip(
-        ['Scaled Gaussian GLRT', 'Scaled Gaussian Kronecker GLRT'],
-        ['Scaled Gaussian SGD', 'Scaled Gaussian Kronecker SGD']):
-        fig = plotille.Figure()
-        fig.height = 15
-        fig.width = 50
-        fig.x_label = 'Pfa'
-        fig.y_label = 'Pd'
-        fig.set_x_limits(min_=0, max_=1.05)
-        fig.set_y_limits(min_=0, max_=1.05)
-
-        statistic_values_H0 = [results[trial_no][config.n_batches_list[-1]]['H0'][statistic_name_glrt]
-                               for trial_no in range(config.n_trials)]
-        statistic_values_H1 = [results[trial_no][config.n_batches_list[-1]]['H1'][statistic_name_glrt]
-                               for trial_no in range(config.n_trials)]
-        pfa, pd = compute_cor(
-                np.array(statistic_values_H0),
-                np.array(statistic_values_H1),
-                config.n_points_roc)
-        fig.plot(
-            pfa, pd,
-            label=f'{statistic_name_glrt}: n_batches={config.n_batches_list[-1]}',
-            marker='⎈'
-        )
-        for i, n_batches in enumerate(config.n_batches_list):
-            statistic_values_H0 = [results[trial_no][n_batches]['H0'][statistic_name_sgd]
-                                   for trial_no in range(config.n_trials)]
-            statistic_values_H1 = [results[trial_no][n_batches]['H1'][statistic_name_sgd]
-                                   for trial_no in range(config.n_trials)]
-
-            pfa, pd = compute_cor(
-                    np.array(statistic_values_H0),
-                    np.array(statistic_values_H1),
-                    config.n_points_roc)
-            fig.plot(
-                pfa, pd,
-                label=f'{statistic_name_sgd}: n_batches={n_batches}',
-                marker=markers[i]
-            )
-        rprint(f"[bold red]Results for {statistic_name_glrt}:")
         print('\n')
         print(fig.show(legend=True))
         print('\n\n\n')

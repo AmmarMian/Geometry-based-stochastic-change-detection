@@ -20,6 +20,8 @@ from manifolds import (
 from pymanopt.manifolds import StrictlyPositiveVectors
 from models import rgrad_scaledgaussian_kronecker
 
+
+rng = np.random.default_rng(7777)
 a = 3
 b = 4
 n_trials = 1000
@@ -28,7 +30,7 @@ n_samples = a*b+1
 
 A = generate_covariance_toeplitz(0.3+0.7j, a)
 B = generate_covariance_toeplitz(0.3+0.6j, b)
-tau = np.ones((n_samples, 1))  # To have gaussian data
+tau = rng.gamma(1, size=(n_samples, 1))
 
 # Normalising by the determinant and applying Kronecker structure
 A, B = [X/(np.abs(np.linalg.det(X))**(1/len(X)))

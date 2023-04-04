@@ -27,6 +27,6 @@ eval "$(conda shell.bash hook)"
 conda activate $CONDA_ENV
 
 echo ""
-SCRIPT="python experiments/montecarlo_roc/compute_mse.py $ARGUMENTS $RESULTS_DIR"
+SCRIPT="python experiments/mse_bound/compute_mse.py $ARGUMENTS $RESULTS_DIR"
 echo "Now launching script: $SCRIPT"
 eval $SCRIPT

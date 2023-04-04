@@ -341,7 +341,7 @@ def scaledgaussian_mle_natural_gradient_fim(
         return Sigma, tau, log
 
 def scaledgaussian_mle_natural_gradient_kronecker_fim_batch(
-    X, a, b, init=None, verbosity=0, return_value="Covariance",maxiter=1000):
+    X, a, b, init=None, verbosity=0, return_value="AB", maxiter=1000):
     """Scaled-Gaussian MLE by using a natural gradient on the
     manifold (SHPDxR+*) with Fisher Information Metric. Version
     with BATCHES of data
@@ -356,9 +356,10 @@ def scaledgaussian_mle_natural_gradient_kronecker_fim_batch(
     verbosity : int, optional
         Level of verbosity of pymanopt. By default 0.
     return_value : string, optional
-        Either "Covariance+texture", "Covariance+texture + log". By default "Covariance+texture"
-        "Covariance+texture": returns the Covariance + texture
-        "Covariance+texture + log" : return Covariance + texture and the log of optimization
+        Either "AB", "AB + log". By default "AB"
+        "AB": returns the values of A, B and texture
+        "Covariance": returns kron(A, B)
+        "AB + log": returns the values of A, B, texture and logs
     Returns
     -------
     Depends on the input value of return_value
@@ -367,19 +368,19 @@ def scaledgaussian_mle_natural_gradient_kronecker_fim_batch(
     n_batches, n_samples, n_features = X.shape
     if a*b != n_features:
         raise AssertionError("Size of matrices imcompatible with data.")
-    
+
     if init is None:
         A = np.eye(a).astype(complex)
         B = np.eye(b).astype(complex)
-        tau = np.ones((n_samples,1))
+        tau = np.ones((n_samples, 1))
         x0 = (A, B, tau)
     else:
         x0 = init
 
     manifold = KroneckerHermitianPositiveScaledGaussian(a, b, n_samples)
-    
+
     @Callable
-    def cost(A,B, tau):
+    def cost(A, B, tau):
         # res = 0
         # for batch in range(n_batches):
         #     res += negative_log_likelihood_complex_scaledgaussian(X[batch], Sigma, tau)
@@ -388,9 +389,8 @@ def scaledgaussian_mle_natural_gradient_kronecker_fim_batch(
             X, np.kron(A,B), tau
         )
 
-
     @Callable
-    def egrad(A,B, tau):
+    def egrad(A, B, tau):
         res_A = np.zeros_like(A)
         res_B = np.zeros_like(B)
         res_tau = np.zeros_like(tau)
@@ -417,7 +417,7 @@ def scaledgaussian_mle_natural_gradient_kronecker_fim_batch(
         return np.kron(A, B), tau
     else:
         return A, B, tau, log
-    
+
 
 def scaledgaussian_mle_natural_gradient_kronecker_fim(
     X, a, b, init=None, verbosity=0, return_value="Covariance"):
@@ -593,7 +593,7 @@ def estimation_cov_kronecker_MM(X, a, b, tol=0.001, iter_max=30,
         return A.T, B, tol, iteration
 
 def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
-                                verbosity=False, return_tau=False):
+                                verbosity=False, return_tau=False, return_info=True):
     """A function that computes the MM algorithm for Kronecker structured
     covariance matrices with Tyler cost function as presented in:
     >Y. Sun, n_features. Babu and D. n_features. Palomar,
@@ -691,9 +691,15 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
         logging.info('student_t_estimator_covariance_mle: recursive algorithm did not converge')
 
     if return_tau:
-        return A.T, B, tol, iteration, M_denominator/a*b
+        if return_info:
+            return A.T, B, tol, iteration, M_denominator/a*b
+        else:
+            return A.T, B, M_denominator/a*b
     else:
-        return A.T, B, tol, iteration
+        if return_info:
+            return A.T, B, tol, iteration
+        else:
+            return A.T, B
 
 
 def tyler_estimator_covariance_matandtext(X, tol=0.0001, iter_max=20, return_tau=False):
