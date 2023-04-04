@@ -22,8 +22,8 @@ from models import rgrad_scaledgaussian_kronecker
 
 a = 3
 b = 4
-n_trials = 1000
-n_batches_list = [2, 5, 10, 25, 50, 100, 200, 500]
+n_trials = 10000
+n_batches_list = [2, 5, 10, 25, 50, 100, 200, 500, 1000]
 n_samples = a*b+1
 
 A = generate_covariance_toeplitz(0.3+0.7j, a)
