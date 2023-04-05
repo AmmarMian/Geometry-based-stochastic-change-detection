@@ -30,7 +30,8 @@ n_samples = a*b+1
 
 A = generate_covariance_toeplitz(0.3+0.7j, a)
 B = generate_covariance_toeplitz(0.3+0.6j, b)
-tau = rng.gamma(1, size=(n_samples, 1))
+nu = 1
+tau = rng.gamma(nu, scale=1/nu, size=(n_samples, 1))
 
 # Normalising by the determinant and applying Kronecker structure
 A, B = [X/(np.abs(np.linalg.det(X))**(1/len(X)))

@@ -57,7 +57,7 @@ if __name__ == "__main__":
         # Generating data H0
         X_H0_global = np.zeros((config.a*config.b, config.n_samples, n_batches), dtype=complex)
         if config.nu_0 is not None:
-            tau_0 = rng.gamma(config.nu_0, size=config.n_samples)
+            tau_0 = rng.gamma(config.nu_0, scale=1/config.nu_0, size=config.n_samples)
         else:
             tau_0 = 1
         for batch_no in range(n_batches):
@@ -67,11 +67,11 @@ if __name__ == "__main__":
 
         # Generating no change data part of H1 scenario
         if config.nu_0 is not None:
-            tau_0 = rng.gamma(config.nu_0, size=config.n_samples)
+            tau_0 = rng.gamma(config.nu_0, scale=1/config.nu_0, size=config.n_samples)
         else:
             tau_0 = 1
         if config.nu_1 is not None:
-            tau_1 = rng.gamma(config.nu_1, size=config.n_samples)
+            tau_1 = rng.gamma(config.nu_1, scale=1/config.nu_1, size=config.n_samples)
         else:
             tau_1 = 1
         X_H1_global = np.zeros((config.a*config.b, config.n_samples,
