@@ -226,9 +226,9 @@ def menu_experiment(experiment):
     index = menu.show()
     while index is not None:
         if index == 0:
-            pydoc.pager(output)
+            pydoc.pipepager(output, cmd='less -R')
         elif index == 1:
-            pydoc.pager(error)
+            pydoc.pipepager(error, cmd='less -R')
         elif index == 2 and 'submit_info' in experiment:
             pydoc.pager(log)
         else:

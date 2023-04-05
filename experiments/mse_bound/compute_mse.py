@@ -153,7 +153,7 @@ if __name__ == "__main__":
     markers = ['o', 'x', '+', '□', '◇', '⊗', '⌀', '⏹']
     ICRB_A = lambda n: (config.a**2-1)/(config.b*config.n_samples*n)
     ICRB_B = lambda n: (config.b**2-1)/(config.a*config.n_samples*n)
-    ICRB_tau = lambda n: 1/(n*config.a*config.b)
+    ICRB_tau = lambda n: config.n_samples/(n*config.a*config.b)
     for element, icrb in zip(['A', 'B', 'tau'], [ICRB_A, ICRB_B, ICRB_tau]):
         fig = plotille.Figure()
         fig.height = 15
