@@ -21,8 +21,8 @@ A_H0 = generate_covariance_toeplitz(0.3+0.7j, a)
 A_H1 = generate_covariance_toeplitz(0.3+0.5j, a)
 B_H0 = generate_covariance_toeplitz(0.3+0.6j, b)
 B_H1 = generate_covariance_toeplitz(0.4+0.5j, b)
-nu_0 = 10000
-nu_1 = 10000
+nu_0 = 100
+nu_1 = 100
 
 # Normalising by the determinant and applying Kronecker structure
 A_H0, A_H1, B_H0, B_H1 = [
