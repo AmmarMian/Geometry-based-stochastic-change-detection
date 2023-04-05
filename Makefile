@@ -151,6 +151,19 @@ Scene4-cropmediumtemporal: # Simulations on real UAVSAR data, Scene4. Cropped on
 	}
 
 
+
+.PHONY: Scene4-highcropmediumtemporal
+Scene4-cropmediumtemporal: # Simulations on real UAVSAR data, Scene4. Cropped on a small patch and repeated 5 times temporally.
+	@{ \
+	CMD="python launch_experiment.py experiments/real_data"; \
+	for DETECTOR in "gaussian_glrt" "scaled_gaussian_glrt" "scaled_gaussian_sgd" "scaled_gaussian_kron_glrt" "scaled_gaussian_kron_sgd" ; do\
+		CMD="$$CMD --execute_args \"4 5 -c 2800 3000 1600 1800 -d $$DETECTOR --data_path $$DATA_PATH\"" ;\
+	done; \
+	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 16GB --tag scene4 --tag repeat --tag crop --tag mediumtemporal";\
+	echo "Evaluating command: $$CMD"; \
+	eval $$CMD; \
+	}
+
 # =========================
 # Help
 # =========================
