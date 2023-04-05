@@ -14,9 +14,15 @@ SHELL := /bin/bash
 # ===============================
 # Montecarlo ROC targets
 # ===============================
+.PHONY: MC-ROC
+MC-ROC: # Montecarlo of a change detection setup and ROC curve analysis. (do targets MC-ROC-gaussian, MC-ROC-pseudogaussian, MC-ROC-nongaussian)
+	@make MC-ROC-gaussian
+	@make MC-ROC-pseudogaussian
+	@make MC-ROC-nongaussian
+
 .PHONY: MC-ROC-gaussian
 MC-ROC-gaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Gaussian data.
-	@{
+	@{ \
 	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/gaussian.py\""; \
 	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag gaussian --tag montecarlo --tag ROC";\
 	echo "Evaluating command: $$CMD"; \
@@ -25,7 +31,7 @@ MC-ROC-gaussian: # Montecarlo of a change detection setup and ROC curve analysis
 
 .PHONY: MC-ROC-pseudogaussian
 MC-ROC-pseudogaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Pseudo-Gaussian data.
-	@{
+	@{ \
 	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/pseudogaussian.py\""; \
 	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag pseudogaussian --tag montecarlo --tag ROC";\
 	echo "Evaluating command: $$CMD"; \
@@ -34,7 +40,7 @@ MC-ROC-pseudogaussian: # Montecarlo of a change detection setup and ROC curve an
 
 .PHONY: MC-ROC-nongaussian
 MC-ROC-nongaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Non-Gaussian data.
-	@{
+	@{ \
 	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/nongaussian.py\""; \
 	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag nongaussian --tag montecarlo --tag ROC";\
 	echo "Evaluating command: $$CMD"; \
