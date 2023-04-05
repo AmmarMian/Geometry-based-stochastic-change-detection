@@ -11,7 +11,40 @@ include CONFIG.sh
 SHELL := /bin/bash
 .DEFAULT_GOAL:=help
 
+# ===============================
+# Montecarlo ROC targets
+# ===============================
+.PHONY: MC-ROC-gaussian
+MC-ROC-gaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Gaussian data.
+	@{
+	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/gaussian.py\""; \
+	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag gaussian --tag montecarlo --tag ROC";\
+	echo "Evaluating command: $$CMD"; \
+	eval $$CMD; \
+	}
 
+.PHONY: MC-ROC-pseudogaussian
+MC-ROC-pseudogaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Pseudo-Gaussian data.
+	@{
+	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/pseudogaussian.py\""; \
+	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag pseudogaussian --tag montecarlo --tag ROC";\
+	echo "Evaluating command: $$CMD"; \
+	eval $$CMD; \
+	}
+
+.PHONY: MC-ROC-nongaussian
+MC-ROC-nongaussian: # Montecarlo of a change detection setup and ROC curve analysis. Case: Non-Gaussian data.
+	@{
+	CMD="python launch_experiment.py experiments/montecarlo_roc --execute_args \"experiments/montecarlo_roc/config/nongaussian.py\""; \
+	CMD="$$CMD --runner $$RUNNER --n_cpus 4 --memory 8GB --tag nongaussian --tag montecarlo --tag ROC";\
+	echo "Evaluating command: $$CMD"; \
+	eval $$CMD; \
+	}
+
+
+# ===============================
+# Real data targets
+# ===============================
 .PHONY: Realdata
 Realdata: # Simulations on real UAVSAR data (do targets Scene1-crop, Scene2-crop, Scene3-crop, Scene4-cropmediumtemporal, Scene4-crophightemporal)
 	@make Scene1-crop
@@ -112,6 +145,9 @@ Scene4-cropmediumtemporal: # Simulations on real UAVSAR data, Scene4. Cropped on
 	}
 
 
+# =========================
+# Help
+# =========================
 .PHONY: help
 help: # Show the help message
 	@echo "This is a Makefile for project: ${PROJECT_NAME}"

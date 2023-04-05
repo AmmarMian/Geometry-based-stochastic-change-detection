@@ -221,8 +221,7 @@ def menu_experiment(experiment):
 
     menu = TerminalMenu(choices, title="Select an action:",
                         preview_command= preview_command,
-                        preview_title="Description",
-                        preview_size=2)
+                        preview_title="Description")
     index = menu.show()
     while index is not None:
         if index == 0:

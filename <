@@ -2,36 +2,16 @@
 # Title: Plotting
 # Description: Plot Change Detection results raw
 
-RESULTS_DIR=${BASH_ARGV[1]}
-COMMIT_SHA=${BASH_ARGV[0]}
-(
 python - << EOF
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
-import git
-import sys
-from importlib import import_module
-from pathlib import Path
-import seaborn as sns
-sns.set(style="darkgrid")
 
 if __name__ == "__main__":
-    with open(f'$RESULTS_DIR/artifact.pkl', 'rb') as f:
+    results_dir = "${BASH_ARGV[1]}"
+    with open(f'{results_dir}/artifact.pkl', 'rb') as f:
         data = pickle.load(f)
-
-    # Getting config file and importing it
-    repo = git.Repo(search_parent_directories=True)
-    commit = repo.commit('$COMMIT_SHA')
-    config_file_content = commit.tree[data['config_file']].data_stream.read().decode('utf-8')
-    config_file_temp = os.path.join(os.path.dirname(data['config_file']), 'config_$COMMIT_SHA.py')
-    with open(config_file_temp, 'w') as f:
-        f.write(config_file_content)
-    sys.path.append(os.path.dirname(data['config_file']))
-    sys.path.append('./src')
-    config = import_module(Path(config_file_temp).stem)
-    os.remove(config_file_temp)
 
     markers = [
         'x', 's', 'd', 'v', '^', '<', '>', 'p', 'h',
@@ -45,19 +25,18 @@ if __name__ == "__main__":
     for element, icrb in zip(['A', 'B', 'tau'], [ICRB_A, ICRB_B, ICRB_tau]):
         plt.figure()
         plt.title(f'MSE for {element}')
-        plt.ylabel(r'$\delta^2$')
-        plt.xlabel(r'$n$ batches$')
+        plt.xlabel(r'$\delta^2$')
+        plt.ylabel(r'$n_{\mathrm{batches}}$')
 
 
-        for i, results_dict in enumerate(data['results'].values()):
+        for i, results_dict in enumerate(data['results'].items()):
             for j, estimator in enumerate(results_dict):
                 plt.loglog(
                     n_batches_list,
                     results_dict[estimator][element],
                     label=f'{estimator}',
-                    marker=markers[2*i+j],
-                    linestyle='None',
-                    markersize=4
+                    marker=markers[Z*i+j],
+                    linestyle='None'
                 )
         # ICRB
         icrb_element = icrb(np.array(n_batches_list))
@@ -66,10 +45,8 @@ if __name__ == "__main__":
             icrb_element,
             label=f'ICRB',
             marker='o',
-            linestyle='-',
-            markersize=4
+            linestyle='-'
         )
         plt.legend()
     plt.show()
 EOF
-)
