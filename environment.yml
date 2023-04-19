@@ -1,0 +1,40 @@
+# ========================================
+# FileName: environment.yml
+# Date: 19 avril 2023 - 15:11
+# Author: Ammar Mian
+# Email: ammar.mian@univ-smb.fr
+# GitHub: https://github.com/ammarmian
+# Brief: Conda environment file for project
+# =========================================
+
+
+name: stochastic-cd
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - numpy
+  - scipy
+  - joblib
+  - matplotlib
+  - plotly
+  - seaborn
+  - tqdm
+  - ipython
+  - jupyter
+  - numba
+  - scikit-learn
+  - pyyaml
+  - wget
+  - pip:
+      - pyriemann
+      - pymanopt
+      - git+https://github.com/HIPS/autograd.git
+      - simple-term-menu
+      - rich
+      - tinydb
+      - GitPython
+      - tikzplotlib
+
