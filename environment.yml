@@ -16,7 +16,7 @@ dependencies:
   - python=3.9
   - pip
   - numpy
-  - scipy
+  - scipy=1.9.3
   - joblib
   - matplotlib
   - plotly
