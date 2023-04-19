@@ -24,7 +24,7 @@ import math
 from scipy.linalg import toeplitz
 
 
-def generate_covariance_toeplitz(rho, dim, dtype=np.complex64):
+def generate_covariance_toeplitz(rho, dim, dtype=np.complex128):
     """Generate a toeplitz structured covariance matrix"""
     cov = toeplitz(np.power(rho, np.arange(0, dim))).astype(dtype)
     return cov
@@ -67,7 +67,7 @@ def multivariate_complex_normal_samples(mean, covariance, N, pseudo_covariance=0
         ).T
     X = v[0:p, :]
     Y = v[p:, :]
-    return X + 1j * Y
+    return np.complex128(X + 1j * Y)
 
 
 
