@@ -37,4 +37,4 @@ dependencies:
       - tinydb
       - GitPython
       - tikzplotlib
-
+      - plotille
