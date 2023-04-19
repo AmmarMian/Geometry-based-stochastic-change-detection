@@ -650,8 +650,8 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
     while (delta > tol) and (iteration < iter_max):
         # Useful values
         i_B = la.inv(B)
-        sqrtm_A = sp.linalg.sqrtm(A)
-        sqrtm_B = sp.linalg.sqrtm(B)
+        sqrtm_A = sp.linalg.sqrtm(A).astype(np.complex128)
+        sqrtm_B = sp.linalg.sqrtm(B).astype(np.complex128)
         isqrtm_A = la.inv(sqrtm_A)
         isqrtm_B = la.inv(sqrtm_B)
 
