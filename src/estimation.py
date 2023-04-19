@@ -650,8 +650,8 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
     while (delta > tol) and (iteration < iter_max):
         # Useful values
         i_B = la.inv(B)
-        sqrtm_A = sp.linalg.sqrtm(A).astype(np.complex128)
-        sqrtm_B = sp.linalg.sqrtm(B).astype(np.complex128)
+        sqrtm_A = sp.linalg.sqrtm(A)
+        sqrtm_B = sp.linalg.sqrtm(B)
         isqrtm_A = la.inv(sqrtm_A)
         isqrtm_B = la.inv(sqrtm_B)
 
@@ -665,7 +665,7 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
                 M += a/(T*n_samples) * (M_numerator[:, :, i,t]/M_denominator)
         A_new = sqrtm_A @ sp.linalg.sqrtm(isqrtm_A @ M @ isqrtm_A) @ sqrtm_A
         delta_A = la.norm(A_new - A, 'fro') / la.norm(A, 'fro')
-        A = A_new.astype(np.complex128)
+        A = A_new
         i_A = la.inv(A)
 
         # Update B with eq. (67)
@@ -677,7 +677,7 @@ def estimation_cov_kronecker_MM_H0(X, a, b, tol=0.001, iter_max=30,
                 M += b/(T*n_samples) * (M_numerator_B/M_denominator)
         B_new = sqrtm_B @ sp.linalg.sqrtm(isqrtm_B @ M @ isqrtm_B) @ sqrtm_B
         delta_B = la.norm(B_new - B, 'fro') / la.norm(B, 'fro')
-        B = B_new.astype(np.complex128)
+        B = B_new
 
         # Condition for stopping
         delta = max(delta_A, delta_B)
